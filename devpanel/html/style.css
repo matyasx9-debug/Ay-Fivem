@@ -1,0 +1,196 @@
+:root {
+  --bg-0: #070b14;
+  --bg-1: #0f1626;
+  --bg-2: #151f35;
+  --card: rgba(255, 255, 255, 0.06);
+  --card-strong: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.15);
+  --accent: #59b3ff;
+  --accent-2: #7affc6;
+  --danger: #ff7272;
+  --text: #edf4ff;
+  --muted: #9db0d1;
+}
+
+* { box-sizing: border-box; font-family: Inter, system-ui, sans-serif; }
+body {
+  margin: 0;
+  width: 100vw;
+  min-height: 100vh;
+  color: var(--text);
+  background: radial-gradient(1200px 700px at 20% 20%, #1f2f57 0%, var(--bg-0) 55%),
+              radial-gradient(900px 500px at 90% 80%, #152949 0%, transparent 55%),
+              var(--bg-0);
+}
+
+.hidden { display: none !important; }
+
+.shell {
+  width: min(1280px, 96vw);
+  max-height: 94vh;
+  margin: 3vh auto;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+}
+
+.topbar {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(89,179,255,0.18), rgba(122,255,198,0.12));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title-wrap { display: flex; align-items: center; gap: 12px; }
+.logo {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0d1828;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  letter-spacing:0.4px;
+}
+
+h1 { margin: 0; font-size: 1.2rem; }
+small { color: #d0e2ff; }
+
+#closeBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.2);
+  color: var(--text);
+  cursor: pointer;
+}
+#closeBtn:hover { border-color: var(--accent); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 14px;
+  padding: 14px;
+  max-height: calc(94vh - 72px);
+}
+
+.quick-card,
+.card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--card-strong), var(--card));
+  padding: 12px;
+}
+
+.quick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.quick-card h2,
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #b9cced;
+}
+
+.quick-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, rgba(89,179,255,0.35), rgba(122,255,198,0.2));
+  border-color: rgba(122,255,198,0.35);
+}
+
+.content {
+  overflow-y: auto;
+  padding-right: 2px;
+  display: grid;
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+label,
+input,
+select,
+button {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button {
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+button:hover { border-color: var(--accent); transform: translateY(-1px); }
+button.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.row.triple {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.hint {
+  padding: 10px;
+  border: 1px dashed rgba(255,255,255,0.25);
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.rank {
+  font-size: 0.72rem;
+  color: #9effb7;
+  margin-left: 6px;
+}
+
+.dev-card {
+  border-color: rgba(122,255,198,0.4);
+  box-shadow: inset 0 0 0 1px rgba(122,255,198,0.12);
+}
+
+code { color: #ffcf84; }
+
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 1fr; }
+  .quick-card { order: 2; }
+  .content { order: 1; }
+}
+
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .row,
+  .row.triple { grid-template-columns: 1fr; }
+  .shell { width: 100vw; margin: 0; border-radius: 0; max-height: 100vh; }
+  .layout { max-height: calc(100vh - 72px); }
+}
