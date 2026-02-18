@@ -1,5 +1,25 @@
 local AdminController = { players = {} }
 
+
+local ESX = nil
+
+CreateThread(function()
+    if GetResourceState('es_extended') == 'started' then
+        pcall(function()
+            ESX = exports['es_extended']:getSharedObject()
+        end)
+    end
+
+    if not ESX then
+        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+    end
+end)
+
+local function getXPlayer(src)
+    if not ESX or not ESX.GetPlayerFromId then return nil end
+    return ESX.GetPlayerFromId(src)
+end
+
 local function getLocale()
     return Config.Locales[Config.Language] or Config.Locales.hu
 end
@@ -68,6 +88,12 @@ local function getRankFromIdentifiers(src)
     return 0
 end
 
+
+local function hasPanelAce(src)
+    if not Config.RequiredAce or Config.RequiredAce == '' then return true end
+    return IsPlayerAceAllowed(src, Config.RequiredAce)
+end
+
 local function ensureAdminState(src)
     AdminController.players[src] = AdminController.players[src] or {
         rank = getRankFromIdentifiers(src),
@@ -79,6 +105,7 @@ end
 local function hasActionAccess(src, action, requiresDuty)
     local state = ensureAdminState(src)
     local minRank = Config.ActionRanks[action] or 999
+    if not hasPanelAce(src) then return false, state end
     if state.rank < minRank then return false, state end
     if requiresDuty and action ~= 'duty' and not state.duty then return false, state end
     return true, state
@@ -113,7 +140,7 @@ end
 RegisterNetEvent('ay_devpanel:requestOpen', function()
     local src = source
     local state = ensureAdminState(src)
-    TriggerClientEvent('ay_devpanel:setPermission', src, state.rank > 0)
+    TriggerClientEvent('ay_devpanel:setPermission', src, state.rank > 0 and hasPanelAce(src))
     syncState(src)
 end)
 
@@ -143,6 +170,62 @@ RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
         })
     elseif action == 'setBlackout' and type(payload) == 'boolean' then
         TriggerClientEvent('ay_devpanel:setBlackoutClient', -1, payload)
+    elseif action == 'tpToPlayer' and type(payload) == 'table' then
+        local targetId = tonumber(payload.targetId or 0)
+        if targetId and targetId > 0 and GetPlayerName(targetId) then
+            local targetPed = GetPlayerPed(targetId)
+            if targetPed and targetPed > 0 then
+                local c = GetEntityCoords(targetPed)
+                TriggerClientEvent('ay_devpanel:setCoordsClient', src, c.x, c.y, c.z + 1.0)
+            end
+        end
+    elseif action == 'bringPlayer' and type(payload) == 'table' then
+        local targetId = tonumber(payload.targetId or 0)
+        if targetId and targetId > 0 and GetPlayerName(targetId) then
+            local srcPed = GetPlayerPed(src)
+            if srcPed and srcPed > 0 then
+                local c = GetEntityCoords(srcPed)
+                TriggerClientEvent('ay_devpanel:setCoordsClient', targetId, c.x, c.y, c.z + 1.0)
+            end
+        end
+    elseif action == 'kickPlayer' and type(payload) == 'table' then
+        local targetId = tonumber(payload.targetId or 0)
+        local reason = tostring(payload.reason or 'Kicked by admin panel')
+        if targetId and targetId > 0 and GetPlayerName(targetId) then
+            DropPlayer(targetId, reason ~= '' and reason or 'Kicked by admin panel')
+        end
+    elseif action == 'reviveTarget' and type(payload) == 'table' then
+        local targetId = tonumber(payload.targetId or 0)
+        if targetId and targetId > 0 and GetPlayerName(targetId) then
+            TriggerClientEvent('ay_devpanel:reviveClient', targetId)
+            TriggerClientEvent('esx_ambulancejob:revive', targetId)
+        end
+    elseif action == 'esxGiveItem' and type(payload) == 'table' then
+        local xTarget = getXPlayer(tonumber(payload.targetId or 0))
+        local item = tostring(payload.item or '')
+        local count = math.max(1, math.floor(tonumber(payload.count) or 1))
+        if xTarget and item ~= '' then xTarget.addInventoryItem(item, count) end
+    elseif action == 'esxRemoveItem' and type(payload) == 'table' then
+        local xTarget = getXPlayer(tonumber(payload.targetId or 0))
+        local item = tostring(payload.item or '')
+        local count = math.max(1, math.floor(tonumber(payload.count) or 1))
+        if xTarget and item ~= '' then xTarget.removeInventoryItem(item, count) end
+    elseif action == 'esxGiveMoney' and type(payload) == 'table' then
+        local xTarget = getXPlayer(tonumber(payload.targetId or 0))
+        local account = tostring(payload.account or 'money')
+        local amount = math.max(1, math.floor(tonumber(payload.amount) or 0))
+        if xTarget and amount > 0 then
+            if account == 'money' then
+                xTarget.addMoney(amount)
+            else
+                xTarget.addAccountMoney(account, amount)
+            end
+        end
+    elseif action == 'esxSetJob' and type(payload) == 'table' then
+        local xTarget = getXPlayer(tonumber(payload.targetId or 0))
+        local job = tostring(payload.job or '')
+        local grade = math.max(0, math.floor(tonumber(payload.grade) or 0))
+        if xTarget and job ~= '' then xTarget.setJob(job, grade) end
     end
 
     logToDiscord(('**%s** -> `%s`'):format(GetPlayerName(src) or ('ID %s'):format(src), action))
@@ -150,6 +233,7 @@ end)
 
 RegisterCommand(Config.OpenCommand, function(src)
     if src == 0 then print('This command can only be used in-game.'); return end
+    if not hasPanelAce(src) then notify(src, t('notAllowedAction')); return end
     TriggerClientEvent('ay_devpanel:togglePanel', src)
 end, false)
 

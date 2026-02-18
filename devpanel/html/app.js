@@ -38,22 +38,37 @@ function updateRankBadges() {
   });
 }
 
+function renderSelectOptions(selectId, options, valueSelector = (x) => x, labelSelector = (x) => x) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = '';
+  options.forEach((entry, index) => {
+    const opt = document.createElement('option');
+    opt.value = String(index);
+    opt.textContent = labelSelector(entry);
+    opt.dataset.value = JSON.stringify(valueSelector(entry));
+    select.appendChild(opt);
+  });
+}
+
 function renderAdminInfo() {
   const rankLabel = adminState.localeUi?.rank || 'Rank';
   const dutyLabel = adminState.localeUi?.duty || 'Duty';
   adminInfo.textContent = `${rankLabel}: ${adminState.rankName} (${adminState.rank}) | ${dutyLabel}: ${adminState.duty ? 'ON' : 'OFF'}`;
 
-  const brandedName = adminState.branding?.panelName || adminState.localeUi?.panelName || 'AY Panel';
-  const brandedLogo = adminState.branding?.panelLogo || 'AY';
-  panelTitle.textContent = brandedName;
-  panelLogo.textContent = brandedLogo;
+  panelTitle.textContent = adminState.branding?.panelName || adminState.localeUi?.panelName || 'AY Panel';
+  panelLogo.textContent = adminState.branding?.panelLogo || 'AY';
 
   developerSection.classList.toggle('hidden', !adminState.isDeveloper);
-
   if (adminState.localeUi?.dutyInfo) document.getElementById('dutyInfo').textContent = adminState.localeUi.dutyInfo;
   if (adminState.localeUi?.sectionDeveloper) document.getElementById('developerTitle').textContent = adminState.localeUi.sectionDeveloper;
   if (adminState.localeUi?.developerHint) document.getElementById('developerHint').textContent = adminState.localeUi.developerHint;
   if (adminState.localeUi?.announcePlaceholder) document.getElementById('announce').placeholder = adminState.localeUi.announcePlaceholder;
+
+  const statRank = document.getElementById('statRank');
+  const statDuty = document.getElementById('statDuty');
+  if (statRank) statRank.textContent = `${adminState.rankName} (${adminState.rank})`;
+  if (statDuty) statDuty.textContent = adminState.duty ? 'ON' : 'OFF';
 
   updateRankBadges();
 }
@@ -62,8 +77,20 @@ window.addEventListener('message', (event) => {
   const data = event.data;
   if (data.action === 'toggle') {
     panel.classList.toggle('hidden', !data.state);
+
+    if (Array.isArray(data.weatherTypes)) {
+      renderSelectOptions('weather', data.weatherTypes);
+      if (data.defaults?.weather) {
+        const weatherSelect = document.getElementById('weather');
+        const index = data.weatherTypes.findIndex((x) => String(x) === String(data.defaults.weather));
+        if (index >= 0) weatherSelect.value = String(index);
+      }
+    }
+    if (Array.isArray(data.teleportPresets)) {
+      renderSelectOptions('tpPreset', data.teleportPresets, (x) => x, (x) => x.label || 'Preset');
+    }
+
     if (data.defaults) {
-      document.getElementById('weather').value = data.defaults.weather;
       document.getElementById('hour').value = data.defaults.hour;
       document.getElementById('minute').value = data.defaults.minute;
       document.getElementById('noclipSpeed').value = data.defaults.noclipSpeed;
@@ -91,13 +118,50 @@ document.querySelectorAll('[data-action]').forEach((btn) => {
     const payload = { action };
 
     if (action === 'spawnVehicle') payload.model = document.getElementById('vehicleModel').value.trim();
-    if (action === 'setWeather') payload.weather = document.getElementById('weather').value;
+    if (action === 'setWeather') {
+      const weatherSelect = document.getElementById('weather');
+      const selected = weatherSelect.options[weatherSelect.selectedIndex];
+      payload.weather = selected ? selected.textContent : '';
+    }
     if (action === 'setTime') {
       payload.hour = Number(document.getElementById('hour').value || 12);
       payload.minute = Number(document.getElementById('minute').value || 0);
     }
     if (action === 'announce') payload.message = document.getElementById('announce').value.trim();
+    if (action === 'tpToPlayer') payload.targetId = Number(document.getElementById('targetId').value || 0);
+    if (action === 'bringPlayer') payload.targetId = Number(document.getElementById('bringTargetId').value || 0);
+    if (action === 'kickPlayer') {
+      payload.targetId = Number(document.getElementById('kickTargetId').value || 0);
+      payload.reason = document.getElementById('kickReason').value.trim();
+    }
+
+    if (action === 'reviveTarget') payload.targetId = Number(document.getElementById('reviveTargetId').value || 0);
+    if (action === 'esxGiveItem') {
+      payload.targetId = Number(document.getElementById('esxItemTargetId').value || 0);
+      payload.item = document.getElementById('esxItemName').value.trim();
+      payload.count = Number(document.getElementById('esxItemCount').value || 1);
+    }
+    if (action === 'esxRemoveItem') {
+      payload.targetId = Number(document.getElementById('esxItemTargetId').value || 0);
+      payload.item = document.getElementById('esxItemName').value.trim();
+      payload.count = Number(document.getElementById('esxRemoveItemCount').value || 1);
+    }
+    if (action === 'esxGiveMoney') {
+      payload.targetId = Number(document.getElementById('esxMoneyTargetId').value || 0);
+      payload.account = document.getElementById('esxMoneyAccount').value;
+      payload.amount = Number(document.getElementById('esxMoneyAmount').value || 0);
+    }
+    if (action === 'esxSetJob') {
+      payload.targetId = Number(document.getElementById('esxJobTargetId').value || 0);
+      payload.job = document.getElementById('esxJobName').value.trim();
+      payload.grade = Number(document.getElementById('esxJobGrade').value || 0);
+    }
     if (action === 'setNoclipSpeed') payload.value = Number(document.getElementById('noclipSpeed').value || 1.5);
+    if (action === 'tpPreset') {
+      const presetSelect = document.getElementById('tpPreset');
+      const selected = presetSelect.options[presetSelect.selectedIndex];
+      payload.preset = selected ? JSON.parse(selected.dataset.value || '{}') : null;
+    }
     if (action === 'tpCoords') {
       payload.x = Number(document.getElementById('tpX').value);
       payload.y = Number(document.getElementById('tpY').value);
@@ -116,6 +180,7 @@ const toggles = [
   { id: 'godmode', action: 'godmode' },
   { id: 'invisible', action: 'invisible' },
   { id: 'noclip', action: 'noclip' },
+  { id: 'freezePosition', action: 'freezePosition' },
   { id: 'coords', action: 'coords' },
   { id: 'superJump', action: 'superJump' },
   { id: 'fastRun', action: 'fastRun' },
@@ -129,8 +194,13 @@ const toggles = [
 toggles.forEach(({ id, action }) => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener('change', () => {
-    post('action', { action, state: el.checked });
+  el.addEventListener('change', () => post('action', { action, state: el.checked }));
+});
+
+document.querySelectorAll('[data-nav-target]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.navTarget);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
 
