@@ -14,6 +14,7 @@ local godMode, noclip, showCoords = false, false, false
 local frozenTime, blackoutEnabled, invisible = false, false, false
 local superJump, fastRun, engineForcedOn = false, false, false
 local noRagdoll, devEntityDebug = false, false
+local freezePosition = false
 local noClipSpeed = 1.5
 
 local savedAppearance = nil
@@ -137,6 +138,8 @@ local function setPanel(state)
         action = 'toggle',
         state = state,
         defaults = { weather = Config.DefaultWeather, hour = Config.DefaultTime.hour, minute = Config.DefaultTime.minute, noclipSpeed = noClipSpeed },
+        weatherTypes = Config.WeatherTypes or {},
+        teleportPresets = Config.TeleportPresets or {},
         admin = {
             rank = adminRank,
             rankName = adminRankName,
@@ -190,6 +193,18 @@ RegisterNetEvent('ay_devpanel:setBlackoutClient', function(state)
     SetArtificialLightsStateAffectsVehicles(false)
 end)
 
+RegisterNetEvent('ay_devpanel:setCoordsClient', function(x, y, z)
+    local ped = PlayerPedId()
+    SetPedCoordsKeepVehicle(ped, tonumber(x) or 0.0, tonumber(y) or 0.0, tonumber(z) or 0.0)
+end)
+
+RegisterNetEvent('ay_devpanel:reviveClient', function()
+    local ped = PlayerPedId()
+    local c = GetEntityCoords(ped)
+    NetworkResurrectLocalPlayer(c.x, c.y, c.z, GetEntityHeading(ped), true, false)
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+end)
+
 RegisterNUICallback('action', function(data, cb)
     local action, ped = data.action, PlayerPedId()
 
@@ -202,6 +217,14 @@ RegisterNUICallback('action', function(data, cb)
         SetPlayerInvincible(PlayerId(), data.state)
     elseif action == 'heal' then
         SetEntityHealth(ped, GetEntityMaxHealth(ped)); SetPedArmour(ped, 100)
+    elseif action == 'setArmor' then
+        SetPedArmour(ped, 100)
+    elseif action == 'revive' then
+        local c = GetEntityCoords(ped)
+        NetworkResurrectLocalPlayer(c.x, c.y, c.z, GetEntityHeading(ped), true, false)
+        SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    elseif action == 'killSelf' then
+        SetEntityHealth(ped, 0)
     elseif action == 'invisible' then
         invisible = data.state
         SetEntityVisible(ped, not data.state, false)
@@ -229,6 +252,14 @@ RegisterNUICallback('action', function(data, cb)
         if tonumber(data.x) and tonumber(data.y) and tonumber(data.z) then
             SetPedCoordsKeepVehicle(ped, tonumber(data.x), tonumber(data.y), tonumber(data.z))
         end
+    elseif action == 'tpPreset' then
+        local preset = data.preset
+        if type(preset) == 'table' and tonumber(preset.x) and tonumber(preset.y) and tonumber(preset.z) then
+            SetPedCoordsKeepVehicle(ped, tonumber(preset.x), tonumber(preset.y), tonumber(preset.z))
+        end
+    elseif action == 'freezePosition' then
+        freezePosition = data.state == true
+        FreezeEntityPosition(ped, freezePosition)
     elseif action == 'giveWeapon' then
         local weaponName = tostring(data.weapon or ''):upper()
         if weaponName ~= '' then
@@ -289,6 +320,22 @@ RegisterNUICallback('action', function(data, cb)
         ClearAreaOfObjects(c.x, c.y, c.z, radius, 0)
     elseif action == 'announce' then
         TriggerServerEvent('ay_devpanel:serverAction', 'announce', data.message)
+    elseif action == 'tpToPlayer' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'tpToPlayer', { targetId = tonumber(data.targetId) or 0 })
+    elseif action == 'bringPlayer' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'bringPlayer', { targetId = tonumber(data.targetId) or 0 })
+    elseif action == 'kickPlayer' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'kickPlayer', { targetId = tonumber(data.targetId) or 0, reason = tostring(data.reason or '') })
+    elseif action == 'reviveTarget' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'reviveTarget', { targetId = tonumber(data.targetId) or 0 })
+    elseif action == 'esxGiveItem' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'esxGiveItem', { targetId = tonumber(data.targetId) or 0, item = tostring(data.item or ''), count = tonumber(data.count) or 1 })
+    elseif action == 'esxRemoveItem' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'esxRemoveItem', { targetId = tonumber(data.targetId) or 0, item = tostring(data.item or ''), count = tonumber(data.count) or 1 })
+    elseif action == 'esxGiveMoney' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'esxGiveMoney', { targetId = tonumber(data.targetId) or 0, account = tostring(data.account or 'money'), amount = tonumber(data.amount) or 0 })
+    elseif action == 'esxSetJob' then
+        TriggerServerEvent('ay_devpanel:serverAction', 'esxSetJob', { targetId = tonumber(data.targetId) or 0, job = tostring(data.job or ''), grade = tonumber(data.grade) or 0 })
     elseif action == 'printCoords' then
         local c, h = GetEntityCoords(ped), GetEntityHeading(ped)
         notify(('~g~X: %.2f Y: %.2f Z: %.2f H: %.2f'):format(c.x, c.y, c.z, h))
@@ -319,6 +366,27 @@ RegisterNUICallback('action', function(data, cb)
 
     cb('ok')
 end)
+
+RegisterCommand(Config.CopyCoordsCommand or 'copycoords', function(_, args)
+    local ped = PlayerPedId()
+    local c, h = GetEntityCoords(ped), GetEntityHeading(ped)
+    local mode = string.lower(tostring(args[1] or 'vec4'))
+    local output
+
+    if mode == 'vec3' then
+        output = ('vec3(%.2f, %.2f, %.2f)'):format(c.x, c.y, c.z)
+    else
+        output = ('vec4(%.2f, %.2f, %.2f, %.2f)'):format(c.x, c.y, c.z, h)
+    end
+
+    if type(lib) == 'table' and type(lib.setClipboard) == 'function' then
+        lib.setClipboard(output)
+        notify(('~g~Koordináta másolva: %s'):format(output))
+    else
+        notify(('~y~Clipboard nem elérhető, koordináta: %s'):format(output))
+        print(output)
+    end
+end, false)
 
 CreateThread(function()
     RegisterKeyMapping('+ay_devpanel', 'Open AY Panel', 'keyboard', Config.ToggleKeybind)
@@ -369,6 +437,11 @@ CreateThread(function()
         end
 
         if noRagdoll then sleep = 0; SetPedCanRagdoll(ped, false) else SetPedCanRagdoll(ped, true) end
+
+        if freezePosition then
+            sleep = 0
+            FreezeEntityPosition(ped, true)
+        end
 
         if devEntityDebug then
             sleep = 0

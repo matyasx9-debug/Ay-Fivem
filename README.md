@@ -4,6 +4,8 @@ Modern, NUI-alapú fejlesztői panel FiveM szerverekhez, hogy gyorsabb legyen a 
 
 ## Funkciók
 
+- Új, modern "dashboard" dizájn (kompakt + görgethető)
+- Kategorizált, görgethető és kompakt panel nézet
 - Noclip állítható sebességgel
 - God mode
 - Pozíció fagyasztása
@@ -11,6 +13,8 @@ Modern, NUI-alapú fejlesztői panel FiveM szerverekhez, hogy gyorsabb legyen a 
 - Koordináta másolás (vec3 / vec4)
 - Jármű spawn / javítás / törlés
 - Idő és időjárás kezelés
+- játékos admin eszközök (TP playerhez, bring, kick, revive target)
+- ESX admin funkciók (item adás/elvétel, money/bank/black_money, setjob)
 - ACE jogosultság alapú védelem
 
 ## Telepítés
@@ -29,14 +33,15 @@ add_principal identifier.fivem:YOUR_ID group.admin
 ## Használat
 
 - Panel megnyitás: `F10` vagy `/devpanel`
-- Koordináta másolás parancs: `/copycoords`
+- Koordináta másolás parancs: `/copycoords` (alapértelmezett: vec4, vagy `/copycoords vec3`)
 
 ## Konfiguráció
 
-A fő beállítások a `shared/config.lua` fájlban vannak:
+A fő beállítások a `devpanel/config.lua` fájlban vannak:
 
 - panel gomb / parancs
-- jogosultság kezelés
+- jogosultság kezelés (ACE: `aydevpanel.use`)
 - noclip sebesség határok
 - időjárás lista
 - teleport presetek
+- /copycoords formátum (vec3/vec4)

@@ -20,44 +20,69 @@
     </header>
 
     <div class="layout">
-      <aside class="quick-card">
-        <h2>Gyors vezérlés</h2>
-        <button class="btn-primary" data-action="duty">Duty ON/OFF (/dutyay)</button>
-        <div class="hint" id="dutyInfo">Admin Controller tud rangot állítani: <code>/setadminay [id] [rank]</code></div>
-        <div class="quick-actions">
-          <button data-action="heal">Heal + Armor <span class="rank" data-rank-action="heal"></span></button>
-          <button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button>
-          <button data-action="tpWaypoint">Teleport Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button>
-          <button data-action="announce">Send <span class="rank" data-rank-action="announce"></span></button>
-        </div>
+      <aside class="sidebar">
+        <section class="quick-card">
+          <h2>Gyors műveletek</h2>
+          <button class="btn-primary" data-action="duty">Duty ON/OFF (/dutyay)</button>
+          <div class="quick-actions">
+            <button data-action="heal">Heal + Armor <span class="rank" data-rank-action="heal"></span></button>
+            <button data-action="setArmor">Set Armor 100 <span class="rank" data-rank-action="setArmor"></span></button>
+            <button data-action="revive">Revive Self <span class="rank" data-rank-action="revive"></span></button>
+            <button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button>
+            <button data-action="tpWaypoint">TP Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button>
+          </div>
+          <div class="hint" id="dutyInfo">Admin Controller tud rangot állítani: <code>/setadminay [id] [rank]</code></div>
+        </section>
+
+        <nav class="category-nav">
+          <button class="nav-btn" data-nav-target="playerCard">Player</button>
+          <button class="nav-btn" data-nav-target="teleportCard">Teleport</button>
+          <button class="nav-btn" data-nav-target="vehicleCard">Vehicle</button>
+          <button class="nav-btn" data-nav-target="worldCard">World</button>
+          <button class="nav-btn" data-nav-target="adminCard">Moderation</button>
+          <button class="nav-btn" data-nav-target="esxCard">ESX</button>
+          <button class="nav-btn" data-nav-target="communicationCard">Comm</button>
+          <button class="nav-btn" data-nav-target="developerSection">Dev</button>
+        </nav>
       </aside>
 
-      <section class="content">
-        <section class="card">
+      <section class="content" id="contentScroller">
+        <section class="card" id="playerCard">
           <h2>Player</h2>
           <div class="grid">
             <label><input type="checkbox" id="godmode" /> Godmode <span class="rank" data-rank-action="godmode"></span></label>
             <label><input type="checkbox" id="invisible" /> Invisible <span class="rank" data-rank-action="invisible"></span></label>
             <label><input type="checkbox" id="noclip" /> Noclip <span class="rank" data-rank-action="noclip"></span></label>
+            <label><input type="checkbox" id="freezePosition" /> Pozíció fagyasztása <span class="rank" data-rank-action="freezePosition"></span></label>
             <label><input type="checkbox" id="coords" /> Koordináta HUD <span class="rank" data-rank-action="coords"></span></label>
             <label><input type="checkbox" id="superJump" /> Super Jump <span class="rank" data-rank-action="superJump"></span></label>
             <label><input type="checkbox" id="fastRun" /> Fast Run <span class="rank" data-rank-action="fastRun"></span></label>
             <button data-action="cleanPed">Clean Ped <span class="rank" data-rank-action="cleanPed"></span></button>
+            <button data-action="killSelf" class="danger">Kill Self <span class="rank" data-rank-action="killSelf"></span></button>
             <div class="row">
               <input id="noclipSpeed" type="number" min="0.5" max="15" step="0.1" value="1.5" />
               <button data-action="setNoclipSpeed">Noclip Speed <span class="rank" data-rank-action="setNoclipSpeed"></span></button>
             </div>
-            <div class="row triple"><input id="tpX" placeholder="X" type="number" step="0.01" /><input id="tpY" placeholder="Y" type="number" step="0.01" /><input id="tpZ" placeholder="Z" type="number" step="0.01" /></div>
-            <button data-action="tpCoords">Teleport XYZ <span class="rank" data-rank-action="tpCoords"></span></button>
             <div class="row"><input id="weaponName" placeholder="WEAPON_CARBINERIFLE" /><button data-action="giveWeapon">Give Weapon <span class="rank" data-rank-action="giveWeapon"></span></button></div>
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" id="teleportCard">
+          <h2>Teleport</h2>
+          <div class="grid">
+            <button data-action="tpWaypoint">Teleport Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button>
+            <div class="row"><select id="tpPreset"></select><button data-action="tpPreset">Preset TP <span class="rank" data-rank-action="tpPreset"></span></button></div>
+            <div class="row triple"><input id="tpX" placeholder="X" type="number" step="0.01" /><input id="tpY" placeholder="Y" type="number" step="0.01" /><input id="tpZ" placeholder="Z" type="number" step="0.01" /></div>
+            <button data-action="tpCoords">Teleport XYZ <span class="rank" data-rank-action="tpCoords"></span></button>
+          </div>
+        </section>
+
+        <section class="card" id="vehicleCard">
           <h2>Vehicle</h2>
           <div class="grid">
             <input id="vehicleModel" placeholder="jármű model (pl: sultanrs)" />
             <button data-action="spawnVehicle">Spawn Vehicle <span class="rank" data-rank-action="spawnVehicle"></span></button>
+            <button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button>
             <button data-action="fullFuel">Full Fuel <span class="rank" data-rank-action="fullFuel"></span></button>
             <button data-action="flipVehicle">Flip Vehicle <span class="rank" data-rank-action="flipVehicle"></span></button>
             <button data-action="maxVehicle">Max Upgrade <span class="rank" data-rank-action="maxVehicle"></span></button>
@@ -66,13 +91,10 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" id="worldCard">
           <h2>World</h2>
           <div class="grid">
-            <select id="weather">
-              <option>EXTRASUNNY</option><option>CLEAR</option><option>CLOUDS</option><option>OVERCAST</option>
-              <option>RAIN</option><option>THUNDER</option><option>FOGGY</option><option>XMAS</option>
-            </select>
+            <select id="weather"></select>
             <button data-action="setWeather">Set Weather <span class="rank" data-rank-action="setWeather"></span></button>
             <div class="row"><input type="number" id="hour" min="0" max="23" value="12" /><input type="number" id="minute" min="0" max="59" value="0" /></div>
             <button data-action="setTime">Set Time <span class="rank" data-rank-action="setTime"></span></button>
@@ -82,10 +104,38 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" id="adminCard">
+          <h2>Moderation (ESX-friendly)</h2>
+          <div class="grid">
+            <div class="row"><input id="targetId" type="number" placeholder="Target ID" /><button data-action="tpToPlayer">TP To Player <span class="rank" data-rank-action="tpToPlayer"></span></button></div>
+            <div class="row"><input id="bringTargetId" type="number" placeholder="Target ID" /><button data-action="bringPlayer">Bring Player <span class="rank" data-rank-action="bringPlayer"></span></button></div>
+            <div class="row"><input id="reviveTargetId" type="number" placeholder="Revive Target ID" /><button data-action="reviveTarget">Revive Target <span class="rank" data-rank-action="reviveTarget"></span></button></div>
+            <div class="row"><input id="kickTargetId" type="number" placeholder="Kick ID" /><input id="kickReason" placeholder="reason" /></div>
+            <button data-action="kickPlayer" class="danger">Kick Player <span class="rank" data-rank-action="kickPlayer"></span></button>
+          </div>
+        </section>
+
+
+        <section class="card" id="esxCard">
+          <h2>ESX Economy & Job Tools</h2>
+          <div class="grid">
+            <div class="row"><input id="esxItemTargetId" type="number" placeholder="Target ID" /><input id="esxItemName" placeholder="item_name" /></div>
+            <div class="row"><input id="esxItemCount" type="number" min="1" value="1" /><button data-action="esxGiveItem">Give Item <span class="rank" data-rank-action="esxGiveItem"></span></button></div>
+            <div class="row"><input id="esxRemoveItemCount" type="number" min="1" value="1" /><button data-action="esxRemoveItem">Remove Item <span class="rank" data-rank-action="esxRemoveItem"></span></button></div>
+
+            <div class="row"><input id="esxMoneyTargetId" type="number" placeholder="Target ID" /><select id="esxMoneyAccount"><option value="money">money</option><option value="bank">bank</option><option value="black_money">black_money</option></select></div>
+            <div class="row"><input id="esxMoneyAmount" type="number" min="1" value="1000" /><button data-action="esxGiveMoney">Give Money <span class="rank" data-rank-action="esxGiveMoney"></span></button></div>
+
+            <div class="row"><input id="esxJobTargetId" type="number" placeholder="Target ID" /><input id="esxJobName" placeholder="job (pl: police)" /></div>
+            <div class="row"><input id="esxJobGrade" type="number" min="0" value="0" /><button data-action="esxSetJob">Set Job <span class="rank" data-rank-action="esxSetJob"></span></button></div>
+          </div>
+        </section>
+
+        <section class="card" id="communicationCard">
           <h2>Communication</h2>
           <div class="grid">
             <input id="announce" placeholder="globál üzenet" />
+            <button data-action="announce">Send Announcement <span class="rank" data-rank-action="announce"></span></button>
           </div>
         </section>
 

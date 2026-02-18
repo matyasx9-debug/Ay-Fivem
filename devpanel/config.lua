@@ -27,13 +27,23 @@ Config.AdminRanks = {
 }
 
 Config.UseAceFallback = true
+Config.RequiredAce = 'aydevpanel.use'
 
 Config.OpenCommand = 'devpanel'
 Config.DutyCommand = 'dutyay'
-Config.ToggleKeybind = 'F7'
+Config.CopyCoordsCommand = 'copycoords'
+Config.ToggleKeybind = 'F10'
 
 Config.DefaultWeather = 'EXTRASUNNY'
 Config.DefaultTime = { hour = 12, minute = 0 }
+Config.WeatherTypes = {
+    'EXTRASUNNY', 'CLEAR', 'CLOUDS', 'OVERCAST', 'RAIN', 'THUNDER', 'FOGGY', 'XMAS'
+}
+Config.TeleportPresets = {
+    { label = 'Legion Square', x = 215.76, y = -810.12, z = 30.73 },
+    { label = 'Sandy Airfield', x = 1738.1, y = 3298.98, z = 41.15 },
+    { label = 'Paleto Bay', x = -445.11, y = 6011.84, z = 31.72 }
+}
 
 Config.EnableWebhookLogs = false
 Config.WebhookUrl = ''
@@ -42,6 +52,9 @@ Config.ActionRanks = {
     duty = 1,
     godmode = 2,
     heal = 1,
+    setArmor = 1,
+    revive = 2,
+    killSelf = 2,
     invisible = 2,
     noclip = 2,
     setNoclipSpeed = 2,
@@ -50,7 +63,9 @@ Config.ActionRanks = {
     fastRun = 2,
     cleanPed = 1,
     tpWaypoint = 2,
+    tpPreset = 2,
     tpCoords = 3,
+    freezePosition = 2,
     giveWeapon = 3,
 
     spawnVehicle = 2,
@@ -67,6 +82,15 @@ Config.ActionRanks = {
     blackout = 5,
     clearArea = 4,
     announce = 2,
+    tpToPlayer = 3,
+    bringPlayer = 3,
+    kickPlayer = 4,
+    reviveTarget = 3,
+
+    esxGiveItem = 3,
+    esxRemoveItem = 3,
+    esxGiveMoney = 3,
+    esxSetJob = 4,
 
     -- Developer-only block
     printCoords = 6,
