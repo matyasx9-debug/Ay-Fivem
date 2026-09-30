@@ -126,6 +126,7 @@ The rule engine runs locally first. The LLM is only contacted when `--ai` is sup
 devguard-ai/
 ├── devguard/
 │   ├── __init__.py
+│   ├── __main__.py
 │   ├── analyzer.py
 │   ├── cli.py
 │   ├── llm.py
