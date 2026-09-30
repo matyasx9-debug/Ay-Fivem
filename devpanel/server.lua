@@ -7,8 +7,7 @@ end
 local function t(key, ...)
     local locale = getLocale()
     local text = locale[key] or key
-    local args = { ... }
-    for i, value in ipairs(args) do
+    for i, value in ipairs({ ... }) do
         text = text:gsub('{' .. (i - 1) .. '}', tostring(value))
     end
     return text
@@ -35,8 +34,28 @@ local function canManageAdmins(rank)
     return Config.Ranks[rank] and Config.Ranks[rank].canManageAdmins == true
 end
 
+local function clamp(value, minValue, maxValue)
+    value = tonumber(value)
+    if not value then return minValue end
+    return math.max(minValue, math.min(maxValue, value))
+end
+
+local function isValidWeather(weather)
+    if type(weather) ~= 'string' then return false end
+    for _, allowed in ipairs(Config.WeatherTypes or {}) do
+        if allowed == weather then return true end
+    end
+    return false
+end
+
+local function trim(value)
+    value = tostring(value or '')
+    return value:gsub('^%s+', ''):gsub('%s+$', '')
+end
+
 local function logToDiscord(message)
     if not Config.EnableWebhookLogs or Config.WebhookUrl == '' then return end
+
     PerformHttpRequest(Config.WebhookUrl, function() end, 'POST', json.encode({
         username = 'AY Panel',
         embeds = {{
@@ -68,31 +87,43 @@ local function getRankFromIdentifiers(src)
     return 0
 end
 
-
 local function hasPanelAce(src)
     if not Config.RequiredAce or Config.RequiredAce == '' then return true end
     return IsPlayerAceAllowed(src, Config.RequiredAce)
 end
 
 local function ensureAdminState(src)
-    AdminController.players[src] = AdminController.players[src] or {
-        rank = getRankFromIdentifiers(src),
-        duty = false
-    }
+    if not AdminController.players[src] then
+        AdminController.players[src] = {
+            rank = getRankFromIdentifiers(src),
+            duty = false
+        }
+    end
     return AdminController.players[src]
 end
 
 local function hasActionAccess(src, action, requiresDuty)
     local state = ensureAdminState(src)
-    local minRank = Config.ActionRanks[action] or 999
-    if not hasPanelAce(src) then return false, state end
-    if state.rank < minRank then return false, state end
-    if requiresDuty and action ~= 'duty' and not state.duty then return false, state end
+    local minRank = tonumber(Config.ActionRanks[action])
+
+    if not minRank then
+        return false, state
+    end
+
+    if not hasPanelAce(src) or state.rank < minRank then
+        return false, state
+    end
+
+    if requiresDuty and action ~= 'duty' and not state.duty then
+        return false, state
+    end
+
     return true, state
 end
 
 local function syncState(src)
     local state = ensureAdminState(src)
+
     TriggerClientEvent('ay_devpanel:adminState', src, {
         rank = state.rank,
         rankName = getRankLabel(state.rank),
@@ -101,94 +132,159 @@ local function syncState(src)
         ranks = Config.Ranks,
         isDeveloper = isDeveloper(state.rank),
         localeUi = getLocale().ui,
-        branding = Config.Branding,
-        dutyOutfit = Config.DutyOutfits[state.rank]
+        branding = Config.Branding
     })
 end
 
 local function setDuty(src, value)
     local state = ensureAdminState(src)
-    state.duty = value
+    state.duty = value == true
     syncState(src)
-    TriggerClientEvent('ay_devpanel:setDutyClient', src, value, state.rank, Config.DutyOutfits[state.rank])
+    TriggerClientEvent('ay_devpanel:setDutyClient', src, state.duty, state.rank, Config.DutyOutfits[state.rank])
 end
 
 local function notify(src, msg)
-    TriggerClientEvent('chat:addMessage', src, { color = { 80, 200, 120 }, args = { 'AY', msg } })
+    TriggerClientEvent('chat:addMessage', src, {
+        color = { 80, 200, 120 },
+        args = { 'AY', msg }
+    })
+end
+
+local function getPlayerTarget(id)
+    id = tonumber(id)
+    if not id or id < 1 then return nil end
+    if not GetPlayerName(id) then return nil end
+    return id
 end
 
 RegisterNetEvent('ay_devpanel:requestOpen', function()
     local src = source
     local state = ensureAdminState(src)
-    TriggerClientEvent('ay_devpanel:setPermission', src, state.rank > 0 and hasPanelAce(src))
-    syncState(src)
+    local allowed = state.rank > 0 and hasPanelAce(src)
+
+    TriggerClientEvent('ay_devpanel:setPermission', src, allowed)
+    if allowed then syncState(src) end
 end)
 
 RegisterNetEvent('ay_devpanel:toggleDuty', function()
     local src = source
     local allowed, state = hasActionAccess(src, 'duty', false)
-    if not allowed then notify(src, t('notAllowedDuty')); return end
+
+    if not allowed then
+        notify(src, t('notAllowedDuty'))
+        return
+    end
+
     setDuty(src, not state.duty)
     notify(src, t('dutyStatus', state.duty and t('on') or t('off')))
+    logToDiscord(('**%s** -> duty [%s]'):format(GetPlayerName(src) or ('ID %s'):format(src), tostring(state.duty)))
 end)
 
 RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
     local src = source
-    local allowed = hasActionAccess(src, action, true)
-    if not allowed then notify(src, t('notAllowedAction')); return end
+    action = tostring(action or '')
 
-    if action == 'setWeather' and type(payload) == 'string' then
+    local allowed, state = hasActionAccess(src, action, true)
+    if not allowed then
+        notify(src, t('notAllowedAction'))
+        return
+    end
+
+    if action == 'setWeather' then
+        if not isValidWeather(payload) then return end
         TriggerClientEvent('ay_devpanel:setWeatherClient', -1, payload)
-    elseif action == 'setTime' and type(payload) == 'table' then
-        TriggerClientEvent('ay_devpanel:setTimeClient', -1, tonumber(payload.hour) or 12, tonumber(payload.minute) or 0)
-    elseif action == 'announce' and type(payload) == 'string' and payload ~= '' then
-        local st = ensureAdminState(src)
+
+    elseif action == 'setTime' then
+        if type(payload) ~= 'table' then return end
+        local hour = math.floor(clamp(payload.hour, 0, 23))
+        local minute = math.floor(clamp(payload.minute, 0, 59))
+        TriggerClientEvent('ay_devpanel:setTimeClient', -1, hour, minute)
+
+    elseif action == 'announce' then
+        local message = trim(payload)
+        local maxLength = tonumber(Config.MaxAnnounceLength) or 300
+        if message == '' then return end
+        if #message > maxLength then message = message:sub(1, maxLength) end
+
         TriggerClientEvent('chat:addMessage', -1, {
             color = { 255, 80, 80 },
             multiline = true,
-            args = { ('AY %s'):format(getRankLabel(st.rank)), payload }
+            args = { ('AY %s'):format(getRankLabel(state.rank)), message }
         })
-    elseif action == 'setBlackout' and type(payload) == 'boolean' then
+
+    elseif action == 'setBlackout' then
+        if type(payload) ~= 'boolean' then return end
         TriggerClientEvent('ay_devpanel:setBlackoutClient', -1, payload)
-    elseif action == 'tpToPlayer' and type(payload) == 'table' then
-        local targetId = tonumber(payload.targetId or 0)
-        if targetId and targetId > 0 and GetPlayerName(targetId) then
+
+    elseif action == 'tpToPlayer' or action == 'bringPlayer' then
+        if type(payload) ~= 'table' then return end
+
+        local targetId = getPlayerTarget(payload.targetId)
+        if not targetId or targetId == src then return end
+
+        if action == 'tpToPlayer' then
             local targetPed = GetPlayerPed(targetId)
             if targetPed and targetPed > 0 then
                 local c = GetEntityCoords(targetPed)
                 TriggerClientEvent('ay_devpanel:setCoordsClient', src, c.x, c.y, c.z + 1.0)
             end
-        end
-    elseif action == 'bringPlayer' and type(payload) == 'table' then
-        local targetId = tonumber(payload.targetId or 0)
-        if targetId and targetId > 0 and GetPlayerName(targetId) then
+        else
             local srcPed = GetPlayerPed(src)
             if srcPed and srcPed > 0 then
                 local c = GetEntityCoords(srcPed)
                 TriggerClientEvent('ay_devpanel:setCoordsClient', targetId, c.x, c.y, c.z + 1.0)
             end
         end
-    elseif action == 'kickPlayer' and type(payload) == 'table' then
-        local targetId = tonumber(payload.targetId or 0)
-        local reason = tostring(payload.reason or 'Kicked by admin panel')
-        if targetId and targetId > 0 and GetPlayerName(targetId) then
-            DropPlayer(targetId, reason ~= '' and reason or 'Kicked by admin panel')
-        end
+
+    elseif action == 'kickPlayer' then
+        if type(payload) ~= 'table' then return end
+
+        local targetId = getPlayerTarget(payload.targetId)
+        if not targetId or targetId == src then return end
+
+        local reason = trim(payload.reason)
+        local maxLength = tonumber(Config.MaxKickReasonLength) or 160
+        if reason == '' then reason = 'Kicked by admin panel' end
+        if #reason > maxLength then reason = reason:sub(1, maxLength) end
+
+        DropPlayer(targetId, reason)
+
+    else
+        return
     end
 
-    logToDiscord(('**%s** -> `%s`'):format(GetPlayerName(src) or ('ID %s'):format(src), action))
+    logToDiscord(('**%s** -> [%s]'):format(
+        GetPlayerName(src) or ('ID %s'):format(src),
+        action
+    ))
 end)
 
 RegisterCommand(Config.OpenCommand, function(src)
-    if src == 0 then print('This command can only be used in-game.'); return end
-    if not hasPanelAce(src) then notify(src, t('notAllowedAction')); return end
+    if src == 0 then
+        print('This command can only be used in-game.')
+        return
+    end
+
+    if not hasPanelAce(src) then
+        notify(src, t('notAllowedAction'))
+        return
+    end
+
     TriggerClientEvent('ay_devpanel:togglePanel', src)
 end, false)
 
 RegisterCommand(Config.DutyCommand, function(src)
-    if src == 0 then print('This command can only be used in-game.'); return end
+    if src == 0 then
+        print('This command can only be used in-game.')
+        return
+    end
+
     local allowed, state = hasActionAccess(src, 'duty', false)
-    if not allowed then notify(src, t('notAllowedDuty')); return end
+    if not allowed then
+        notify(src, t('notAllowedDuty'))
+        return
+    end
+
     setDuty(src, not state.duty)
     notify(src, t('dutyStatus', state.duty and t('on') or t('off')))
 end, false)
@@ -199,9 +295,10 @@ RegisterCommand('setadminay', function(src, args)
         return
     end
 
-    local target = tonumber(args[1] or '')
-    local rank = math.max(0, math.floor(tonumber(args[2] or '') or -1))
-    if not target or not GetPlayerName(target) or (rank > 0 and not Config.Ranks[rank]) then
+    local target = getPlayerTarget(args[1])
+    local rank = math.floor(tonumber(args[2] or '') or -1)
+
+    if not target or rank < 0 or (rank > 0 and not Config.Ranks[rank]) then
         if src == 0 then
             print('Usage: setadminay <id> <rank> (rank must exist in Config.Ranks)')
         else
@@ -210,10 +307,11 @@ RegisterCommand('setadminay', function(src, args)
         return
     end
 
-    local st = ensureAdminState(target)
-    st.rank = rank
-    if rank == 0 and st.duty then
-        st.duty = false
+    local targetState = ensureAdminState(target)
+    targetState.rank = rank
+
+    if rank == 0 and targetState.duty then
+        targetState.duty = false
         TriggerClientEvent('ay_devpanel:setDutyClient', target, false, rank, nil)
     end
 
@@ -223,6 +321,22 @@ RegisterCommand('setadminay', function(src, args)
     if src ~= 0 then
         notify(src, t('setRankDone', GetPlayerName(target) or ('ID %s'):format(target), getRankLabel(rank)))
     end
-end, true)
 
-AddEventHandler('playerDropped', function() AdminController.players[source] = nil end)
+    logToDiscord(('**%s** -> set rank of **%s** to [%s]'):format(
+        GetPlayerName(src) or 'CONSOLE',
+        GetPlayerName(target) or ('ID %s'):format(target),
+        rank
+    ))
+end, false)
+
+AddEventHandler('playerDropped', function()
+    AdminController.players[source] = nil
+end)
+
+AddEventHandler('playerJoining', function()
+    AdminController.players[source] = nil
+end)
+
+CreateThread(function()
+    print(('[AY Panel] v%s loaded.'):format(GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'))
+end)
