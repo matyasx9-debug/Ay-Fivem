@@ -1,0 +1,5 @@
+2026-09-30T08:41:02Z INFO Starting API server on :8080
+2026-09-30T08:42:11Z WARNING Connection timeout to database
+2026-09-30T08:42:13Z ERROR database connection failed
+2026-09-30T08:43:02Z ERROR HTTP 500 /api/orders
+2026-09-30T08:44:10Z WARNING Failed login for user admin from 203.0.113.42
