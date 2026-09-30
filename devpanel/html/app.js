@@ -18,12 +18,18 @@ let adminState = {
   branding: {}
 };
 
-function post(endpoint, payload = {}) {
-  return fetch(`https://${resourceName}/${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+async function post(endpoint, payload = {}) {
+  try {
+    const response = await fetch(`https://${resourceName}/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('AY Panel request failed:', error);
+    return false;
+  }
 }
 
 function rankNameByLevel(level) {
