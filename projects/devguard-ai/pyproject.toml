@@ -12,6 +12,9 @@ license = {text = "MIT"}
 authors = [{name = "matyasx9-debug"}]
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [project.scripts]
 devguard = "devguard.cli:main"
 
