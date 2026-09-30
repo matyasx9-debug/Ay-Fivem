@@ -48,6 +48,12 @@ Config.TeleportPresets = {
 Config.EnableWebhookLogs = false
 Config.WebhookUrl = ''
 
+-- Validation / safety limits
+Config.MaxAnnounceLength = 300
+Config.MaxKickReasonLength = 160
+Config.MaxNoclipSpeed = 15.0
+Config.MinNoclipSpeed = 0.5
+
 Config.ActionRanks = {
     duty = 1,
     godmode = 2,
