@@ -18,6 +18,7 @@ local freezePosition = false
 local noClipSpeed = 1.5
 
 local savedAppearance = nil
+local actionBusy = false
 
 local function notify(msg)
     BeginTextCommandThefeedPost('STRING')
@@ -29,7 +30,9 @@ local function loadModel(modelName)
     local model = type(modelName) == 'string' and joaat(modelName) or modelName
     if not IsModelInCdimage(model) then return false end
     RequestModel(model)
-    while not HasModelLoaded(model) do Wait(0) end
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(model) and GetGameTimer() < timeout do Wait(0) end
+    if not HasModelLoaded(model) then return false end
     SetPlayerModel(PlayerId(), model)
     SetModelAsNoLongerNeeded(model)
     return true
@@ -68,7 +71,9 @@ end
 local function applyDutyOutfit(rank, outfit)
     local ped = PlayerPedId()
     if not savedAppearance then savedAppearance = captureAppearance(ped) end
-    if outfit and outfit.model then loadModel(outfit.model); ped = PlayerPedId() end
+    if outfit and outfit.model then
+        if loadModel(outfit.model) then ped = PlayerPedId() end
+    end
     if outfit and outfit.components then
         for compId, comp in pairs(outfit.components) do
             SetPedComponentVariation(ped, tonumber(compId), comp.drawable, comp.texture or 0, comp.palette or 0)
@@ -199,8 +204,10 @@ RegisterNetEvent('ay_devpanel:setCoordsClient', function(x, y, z)
 end)
 
 RegisterNUICallback('action', function(data, cb)
-    local action, ped = data.action, PlayerPedId()
+    local ped = PlayerPedId()
 
+    if type(data) ~= 'table' then cb('ok'); return end
+    local action = tostring(data.action or '')
     if action == 'duty' then TriggerServerEvent('ay_devpanel:toggleDuty'); cb('ok'); return end
     if not hasActionPermission(action) then cb('ok'); return end
 
@@ -226,7 +233,7 @@ RegisterNUICallback('action', function(data, cb)
         SetEntityCollision(ped, not data.state, not data.state)
         FreezeEntityPosition(ped, data.state)
     elseif action == 'setNoclipSpeed' then
-        noClipSpeed = math.max(0.5, math.min(15.0, tonumber(data.value) or 1.5))
+        noClipSpeed = math.max(Config.MinNoclipSpeed or 0.5, math.min(Config.MaxNoclipSpeed or 15.0, tonumber(data.value) or 1.5))
     elseif action == 'coords' then
         showCoords = data.state
     elseif action == 'superJump' then
@@ -263,7 +270,9 @@ RegisterNUICallback('action', function(data, cb)
         local modelName, model = (data.model or ''):lower(), joaat((data.model or ''):lower())
         if modelName ~= '' and IsModelInCdimage(model) and IsModelAVehicle(model) then
             RequestModel(model)
-            while not HasModelLoaded(model) do Wait(0) end
+            local timeout = GetGameTimer() + 5000
+            while not HasModelLoaded(model) and GetGameTimer() < timeout do Wait(0) end
+            if not HasModelLoaded(model) then cb('ok'); return end
             local c, h = GetEntityCoords(ped), GetEntityHeading(ped)
             local v = CreateVehicle(model, c.x, c.y, c.z, h, true, false)
             SetPedIntoVehicle(ped, v, -1)
@@ -328,7 +337,9 @@ RegisterNUICallback('action', function(data, cb)
         local objName, hash = tostring(data.object or ''), joaat(tostring(data.object or ''))
         if objName ~= '' and IsModelInCdimage(hash) then
             RequestModel(hash)
-            while not HasModelLoaded(hash) do Wait(0) end
+            local timeout = GetGameTimer() + 5000
+            while not HasModelLoaded(hash) and GetGameTimer() < timeout do Wait(0) end
+            if not HasModelLoaded(hash) then cb('ok'); return end
             local c, f = GetEntityCoords(ped), GetEntityForwardVector(ped)
             local obj = CreateObject(hash, c.x + f.x * 2.0, c.y + f.y * 2.0, c.z, true, true, false)
             PlaceObjectOnGroundProperly(obj)
