@@ -17,7 +17,7 @@ DevGuard AI turns raw application and server logs into structured findings. It w
 - 🧭 Classifies findings by severity
 - 📦 JSON output for scripts and automation
 - 🤖 Optional LLM-powered incident summaries
-- 🔐 AI mode is opt-in
+- 🔐 AI mode is opt-in and common secrets are redacted before log content is sent
 - 🧪 Automated unit tests
 - ⚙️ GitHub Actions CI
 - 🐍 Python 3.11+ with a lightweight standard-library core
@@ -61,6 +61,8 @@ CRITICAL http        line 4: Server returned an HTTP 5xx response
 CRITICAL security    line 5: Authentication failure detected
 ```
 
+A scan exits with code **2** when at least one CRITICAL finding is detected, making DevGuard suitable for CI gates and automation.
+
 ## 📦 CLI
 
 ### Scan a log
@@ -82,6 +84,8 @@ export OPENAI_API_KEY="your-key"
 export DEVGUARD_MODEL="gpt-4.1-mini"
 python -m devguard scan examples/sample.log --ai
 ```
+
+Before an AI request, DevGuard automatically redacts common `password=`, `token=`, `secret=`, `api_key=`, Bearer-token and OpenAI-style key patterns. This is a safety layer, not a guarantee that every secret format will be detected.
 
 For an OpenAI-compatible provider:
 
@@ -175,7 +179,7 @@ GitHub Actions runs the test suite and sample CLI check for changes under `proje
 - [x] Optional LLM summaries
 - [x] Unit tests
 - [x] GitHub Actions CI
-- [ ] Secret redaction before AI requests
+- [x] Secret redaction before AI requests
 - [ ] YAML/TOML rule configuration
 - [ ] Docker image
 - [ ] Web dashboard
