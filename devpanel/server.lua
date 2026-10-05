@@ -144,12 +144,17 @@ local function discordLog(title, description, color, fields)
 end
 
 local function logToDiscord(message)
+    local cfg = getDiscordConfig()
+    if not cfg or cfg.logAdminActions == false then return end
     discordLog('AY Panel Action', message, 3447003)
 end
 
 local function logPlayerEvent(title, src, color, extra)
     local cfg = getDiscordConfig()
     if not cfg then return end
+    if (title == 'Admin duty ON' or title == 'Admin duty OFF') and cfg.logDutyChanges == false then return end
+    if (title == 'Admin rank changed') and cfg.logRankChanges == false then return end
+    if (title == 'Player joining' or title == 'Player left') and cfg.logPlayerJoinLeave == false then return end
 
     local name = GetPlayerName(src) or ('ID %s'):format(src)
     local fields = {
@@ -493,7 +498,8 @@ RegisterCommand('setadminay', function(src, args)
         notify(src, t('setRankDone', GetPlayerName(target) or ('ID %s'):format(target), getRankLabel(rank)))
     end
 
-    discordLog('Admin rank changed', ('%s changed %s to rank %s'):format(GetPlayerName(src) or 'CONSOLE', GetPlayerName(target) or ('ID %s'):format(target), rank), ((Config.Discord or {}).colors or {}).purple, {{ name = 'Actor', value = ('%s (#%s)'):format(GetPlayerName(src) or 'CONSOLE', src), inline = true }, { name = 'Target', value = ('%s (#%s)'):format(GetPlayerName(target) or 'Unknown', target), inline = true }, { name = 'New rank', value = ('%s — %s'):format(rank, getRankLabel(rank)), inline = true }})
+    if (Config.Discord or {}).logRankChanges ~= false then
+        discordLog('Admin rank changed', ('%s changed %s to rank %s'):format(GetPlayerName(src) or 'CONSOLE', GetPlayerName(target) or ('ID %s'):format(target), rank), ((Config.Discord or {}).colors or {}).purple, {{ name = 'Actor', value = ('%s (#%s)'):format(GetPlayerName(src) or 'CONSOLE', src), inline = true }, { name = 'Target', value = ('%s (#%s)'):format(GetPlayerName(target) or 'Unknown', target), inline = true }, { name = 'New rank', value = ('%s — %s'):format(rank, getRankLabel(rank)), inline = true }})
 end, false)
 
 AddEventHandler('playerJoining', function()
@@ -515,14 +521,18 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     if (Config.Discord or {}).logServerLifecycle then
+        if (Config.Discord or {}).logServerLifecycle ~= false then
         discordLog('AY Panel started', 'The AY Developer Panel resource is now online.', ((Config.Discord or {}).colors or {}).success)
+    end
     end
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     if (Config.Discord or {}).logServerLifecycle then
+        if (Config.Discord or {}).logServerLifecycle ~= false then
         discordLog('AY Panel stopped', 'The AY Developer Panel resource is shutting down.', ((Config.Discord or {}).colors or {}).danger)
+    end
     end
 end)
 
