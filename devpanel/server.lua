@@ -66,6 +66,24 @@ local function normalizeRank(rank)
     return rank
 end
 
+local AuditHistory = {}
+local AuditSequence = 0
+local MAX_AUDIT_HISTORY = 100
+
+local function addAuditEntry(src, action, target, details)
+    AuditSequence = AuditSequence + 1
+    AuditHistory[#AuditHistory + 1] = {
+        id = AuditSequence,
+        time = os.date('%Y-%m-%d %H:%M:%S'),
+        actor = src and src > 0 and (GetPlayerName(src) or ('ID %s'):format(src)) or 'CONSOLE',
+        actorId = tonumber(src) or 0,
+        action = tostring(action or 'Unknown'),
+        target = tostring(target or '-'),
+        details = tostring(details or '')
+    }
+    while #AuditHistory > MAX_AUDIT_HISTORY do table.remove(AuditHistory, 1) end
+end
+
 local DiscordQueue = {}
 local DiscordSending = false
 
@@ -287,6 +305,7 @@ RegisterNetEvent('ay_devpanel:toggleDuty', function()
 
     setDuty(src, not state.duty)
     notify(src, t('dutyStatus', state.duty and t('on') or t('off')))
+    addAuditEntry(src, state.duty and 'dutyOn' or 'dutyOff', '-', ('Rank: %s'):format(getRankLabel(state.rank)))
     logPlayerEvent(state.duty and 'Admin duty ON' or 'Admin duty OFF', src, state.duty and ((Config.Discord or {}).colors or {}).success or ((Config.Discord or {}).colors or {}).warning, ('Rank: %s'):format(getRankLabel(state.rank)))
 end)
 
@@ -315,6 +334,13 @@ RegisterNetEvent('ay_devpanel:requestPlayers', function()
     local allowed = hasActionAccess(src, 'viewPlayers', false)
     if not allowed then return end
     sendPlayerList(src)
+end)
+
+RegisterNetEvent('ay_devpanel:requestAuditHistory', function()
+    local src = source
+    local allowed = hasActionAccess(src, 'viewPlayers', false)
+    if not allowed then return end
+    TriggerClientEvent('ay_devpanel:auditHistory', src, AuditHistory)
 end)
 
 RegisterNetEvent('ay_devpanel:playerAction', function(action, payload)
@@ -356,6 +382,7 @@ RegisterNetEvent('ay_devpanel:playerAction', function(action, payload)
         if #reason > maxLength then reason = reason:sub(1, maxLength) end
         DropPlayer(targetId, reason)
     end
+    addAuditEntry(src, action, ('%s (#%s)'):format(GetPlayerName(targetId) or 'Unknown', targetId), payload.reason or '')
     discordLog('Player action', ('%s used %s on %s'):format(GetPlayerName(src) or ('ID %s'):format(src), action, GetPlayerName(targetId) or ('ID %s'):format(targetId)), ((Config.Discord or {}).colors or {}).danger, {{ name = 'Admin', value = ('%s (#%s)'):format(GetPlayerName(src) or 'Unknown', src), inline = true }, { name = 'Target', value = ('%s (#%s)'):format(GetPlayerName(targetId) or 'Unknown', targetId), inline = true }, { name = 'Action', value = action, inline = true }})
 end)
 
@@ -432,6 +459,7 @@ RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
         return
     end
 
+    addAuditEntry(src, action, '-', type(payload) == 'table' and (payload.reason or payload.message or '') or tostring(payload or ''))
     discordLog('Server action', ('%s used %s'):format(GetPlayerName(src) or ('ID %s'):format(src), action), ((Config.Discord or {}).colors or {}).info, {{ name = 'Admin', value = ('%s (#%s)'):format(GetPlayerName(src) or 'Unknown', src), inline = true }, { name = 'Action', value = action, inline = true }})
 end)
 
@@ -498,6 +526,7 @@ RegisterCommand('setadminay', function(src, args)
         notify(src, t('setRankDone', GetPlayerName(target) or ('ID %s'):format(target), getRankLabel(rank)))
     end
 
+    addAuditEntry(src, 'rankChange', ('%s (#%s)'):format(GetPlayerName(target) or 'Unknown', target), ('New rank: %s — %s'):format(rank, getRankLabel(rank)))
     if (Config.Discord or {}).logRankChanges ~= false then
         discordLog('Admin rank changed', ('%s changed %s to rank %s'):format(GetPlayerName(src) or 'CONSOLE', GetPlayerName(target) or ('ID %s'):format(target), rank), ((Config.Discord or {}).colors or {}).purple, {
             { name = 'Actor', value = ('%s (#%s)'):format(GetPlayerName(src) or 'CONSOLE', src), inline = true },
