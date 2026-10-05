@@ -1,4 +1,5 @@
 local AdminController = { players = {} }
+local FrozenPlayers = {}
 
 local function getLocale()
     return Config.Locales[Config.Language] or Config.Locales.hu
@@ -192,6 +193,75 @@ RegisterNetEvent('ay_devpanel:toggleDuty', function()
     logToDiscord(('**%s** -> duty [%s]'):format(GetPlayerName(src) or ('ID %s'):format(src), tostring(state.duty)))
 end)
 
+local function sendPlayerList(src)
+    local players = {}
+    for _, playerId in ipairs(GetPlayers()) do
+        local id = tonumber(playerId)
+        if id then
+            local state = ensureAdminState(id)
+            players[#players + 1] = {
+                id = id,
+                name = GetPlayerName(id) or ('ID %s'):format(id),
+                ping = GetPlayerPing(id) or 0,
+                rank = state.rank or 0,
+                rankName = getRankLabel(state.rank or 0),
+                duty = state.duty == true
+            }
+        end
+    end
+    table.sort(players, function(a, b) return a.id < b.id end)
+    TriggerClientEvent('ay_devpanel:playerList', src, players)
+end
+
+RegisterNetEvent('ay_devpanel:requestPlayers', function()
+    local src = source
+    local allowed = hasActionAccess(src, 'viewPlayers', false)
+    if not allowed then return end
+    sendPlayerList(src)
+end)
+
+RegisterNetEvent('ay_devpanel:playerAction', function(action, payload)
+    local src = source
+    action = tostring(action or '')
+    payload = type(payload) == 'table' and payload or {}
+    local allowed = hasActionAccess(src, action, true)
+    if not allowed then notify(src, t('notAllowedAction')); return end
+    local targetId = getPlayerTarget(payload.targetId)
+    if not targetId or targetId == src then return end
+
+    if action == 'playerSpectate' then
+        TriggerClientEvent('ay_devpanel:startSpectate', src, targetId)
+    elseif action == 'playerFreeze' then
+        FrozenPlayers[targetId] = not FrozenPlayers[targetId]
+        TriggerClientEvent('ay_devpanel:setPlayerFrozen', targetId, FrozenPlayers[targetId] == true)
+    elseif action == 'playerHeal' then
+        TriggerClientEvent('ay_devpanel:playerHeal', targetId)
+    elseif action == 'playerRevive' then
+        TriggerClientEvent('ay_devpanel:playerRevive', targetId)
+    elseif action == 'playerKill' then
+        TriggerClientEvent('ay_devpanel:playerKill', targetId)
+    elseif action == 'playerGoto' then
+        local targetPed = GetPlayerPed(targetId)
+        if targetPed and targetPed > 0 then
+            local c = GetEntityCoords(targetPed)
+            TriggerClientEvent('ay_devpanel:setCoordsClient', src, c.x, c.y, c.z + 1.0)
+        end
+    elseif action == 'playerBring' then
+        local srcPed = GetPlayerPed(src)
+        if srcPed and srcPed > 0 then
+            local c = GetEntityCoords(srcPed)
+            TriggerClientEvent('ay_devpanel:setCoordsClient', targetId, c.x, c.y, c.z + 1.0)
+        end
+    elseif action == 'playerKick' then
+        local reason = trim(payload.reason)
+        local maxLength = tonumber(Config.MaxKickReasonLength) or 160
+        if reason == '' then reason = 'Kicked by AY Panel' end
+        if #reason > maxLength then reason = reason:sub(1, maxLength) end
+        DropPlayer(targetId, reason)
+    end
+    logToDiscord(('**%s** -> player [%s] target **%s**'):format(GetPlayerName(src) or ('ID %s'):format(src), action, GetPlayerName(targetId) or ('ID %s'):format(targetId)))
+end)
+
 RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
     local src = source
     action = tostring(action or '')
@@ -343,6 +413,7 @@ end, false)
 
 AddEventHandler('playerDropped', function()
     AdminController.players[source] = nil
+    FrozenPlayers[source] = nil
 end)
 
 AddEventHandler('playerJoining', function()
