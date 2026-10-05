@@ -48,6 +48,31 @@ Config.TeleportPresets = {
 Config.EnableWebhookLogs = false
 Config.WebhookUrl = ''
 
+-- Discord integration
+-- Keep webhook URLs private. Prefer server.cfg/environment injection for production.
+Config.Discord = {
+    enabled = false,
+    webhook = '',
+    username = 'AY Panel',
+    avatarUrl = '',
+    logPlayerJoinLeave = true,
+    logAdminActions = true,
+    logDutyChanges = true,
+    logRankChanges = true,
+    logServerLifecycle = true,
+    includeIdentifiers = false,
+    includeCoordinates = false,
+    maxQueueSize = 50,
+    retryCount = 2,
+    colors = {
+        info = 3447003,
+        success = 5763719,
+        warning = 16776960,
+        danger = 15158332,
+        purple = 10181046
+    }
+}
+
 -- Validation / safety limits
 Config.MaxAnnounceLength = 300
 Config.MaxKickReasonLength = 160
