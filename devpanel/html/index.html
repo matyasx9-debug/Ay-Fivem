@@ -35,7 +35,8 @@
         </section>
 
         <nav class="category-nav">
-          <button class="nav-btn" data-nav-target="playerCard">Player</button>
+          <button class="nav-btn" data-nav-target="playerManagementCard">Players</button>
+          <button class="nav-btn" data-nav-target="playerCard">Self</button>
           <button class="nav-btn" data-nav-target="teleportCard">Teleport</button>
           <button class="nav-btn" data-nav-target="vehicleCard">Vehicle</button>
           <button class="nav-btn" data-nav-target="worldCard">World</button>
@@ -46,7 +47,13 @@
       </aside>
 
       <section class="content" id="contentScroller">
-        <section class="card" id="playerCard">
+                <section class="card player-management" id="playerManagementCard">
+          <div class="section-head"><div><h2>Live Players</h2><div class="subtext"><span id="playerCount">0</span> játékos online</div></div><button id="refreshPlayers" class="compact-btn">↻ Frissítés</button></div>
+          <div class="player-toolbar"><input id="playerSearch" placeholder="Keresés név vagy ID alapján..." /><select id="playerFilter"><option value="all">Minden játékos</option><option value="staff">Staff</option></select></div>
+          <div id="playerList" class="player-list"><div class="empty-state">Játékoslista betöltése...</div></div>
+          <div class="hint">A játékosműveletek szerveroldali rang- és duty-ellenőrzésen mennek keresztül.</div>
+        </section>
+<section class="card" id="playerCard">
           <h2>Player</h2>
           <div class="grid">
             <label><input type="checkbox" id="godmode" /> Godmode <span class="rank" data-rank-action="godmode"></span></label>
