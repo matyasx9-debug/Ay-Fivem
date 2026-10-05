@@ -17,6 +17,7 @@ A standalone, modern NUI admin and developer panel for FiveM servers.
 - `/copycoords` with Vec3 and Vec4 output
 - Hungarian and English UI support
 - Advanced Discord audit logging with embeds, event categories, queue/retry handling, player join/leave and server lifecycle events
+- In-panel Admin Audit Log with search and action filters
 - Server-side permission and input validation
 - GitHub Actions CI
 
@@ -119,6 +120,8 @@ Edit `devpanel/config.lua` to configure:
 - Allowed weather types
 - Teleport presets
 - Webhook logging
+- Discord audit logging
+- Admin Audit Log
 - Minimum rank per action
 - Duty outfits
 - Input limits
@@ -162,6 +165,16 @@ Config.Discord = {
 Never commit a real Discord webhook URL to a public repository.
 
 Discord logs now include structured embeds for admin/player actions, duty changes, rank changes, player joins/leaves and resource lifecycle events. Webhook requests are queued and retried to reduce log loss during short Discord/network interruptions. Identifier logging is opt-in.
+
+## Admin Audit Log
+
+The in-panel Audit Log records the latest **100 admin actions** and provides:
+
+- Admin/action/target details
+- Player, server, rank and duty event categories
+- Search
+- Action filters
+- Server-side permission protection
 
 ## Copy coordinates
 
@@ -207,4 +220,4 @@ Current **AY Panel v2.4.0** visual preview in a FiveM-style in-game environment:
 
 ![AY Panel v2.4.0 In-game Preview](docs/ay-panel-preview.svg)
 
-> Preview is a visual mockup of the current NUI layout and features; actual player/server data is populated live in FiveM.
+> Preview is a **2560×1440 high-resolution visual mockup** of the current NUI layout and features; actual player/server data is populated live in FiveM.
