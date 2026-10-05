@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0 - Live Player Management
+- Added live online player list with ID, ping and staff/duty status.
+- Added search and staff filtering.
+- Added Spectate, Go To, Bring, Freeze, Heal, Revive, Kill and Kick.
+- Added server-side authorization for player actions.
+- Added automatic refresh while the panel is open.
+
+
 ## 2.1.0 — 2026-10-05
 
 ### Changed
