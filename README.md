@@ -2,7 +2,7 @@
 
 A standalone, modern NUI admin and developer panel for FiveM servers.
 
-**Current release: 2.1.0**
+**Current release: 2.2.0**
 
 ## Features
 
@@ -174,3 +174,11 @@ Clipboard support uses `lib.setClipboard` when available. Without it, the coordi
 ## License
 
 See the repository license file.
+
+## 2.2.0 — Live Player Management
+
+- Live online player list with automatic refresh
+- Search by player name or server ID
+- Ping and staff/duty indicators
+- Spectate, Go To, Bring, Freeze, Heal, Revive, Kill and Kick
+- Server-side rank and duty validation for player actions
