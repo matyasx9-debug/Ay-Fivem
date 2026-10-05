@@ -4,7 +4,7 @@ game 'gta5'
 name 'ay_devpanel'
 author 'Codex'
 description 'AY Panel with admin and developer tools for FiveM'
-version '2.3.0'
+version '2.4.0'
 
 ui_page 'html/index.html'
 
