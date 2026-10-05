@@ -12,138 +12,92 @@
       <div class="title-wrap">
         <div id="panelLogo" class="logo">AY</div>
         <div>
+          <div class="eyebrow">ADMINISTRATION CENTER</div>
           <h1 id="panelTitle">AY Panel</h1>
           <small id="adminInfo">Rang: N/A | Duty: OFF</small>
         </div>
       </div>
-      <button id="closeBtn" title="Bezárás">✕</button>
+      <div class="top-status">
+        <span class="status-dot"></span><span>SERVER ONLINE</span>
+        <button id="closeBtn" title="Bezárás">✕</button>
+      </div>
     </header>
 
     <div class="layout">
       <aside class="sidebar">
+        <nav class="category-nav">
+          <div class="nav-label">NAVIGATION</div>
+          <button class="nav-btn active" data-nav-target="dashboardCard"><span>⌂</span> Dashboard</button>
+          <button class="nav-btn" data-nav-target="playerManagementCard"><span>♙</span> Players</button>
+          <button class="nav-btn" data-nav-target="playerCard"><span>◉</span> Self</button>
+          <button class="nav-btn" data-nav-target="teleportCard"><span>⌖</span> Teleport</button>
+          <button class="nav-btn" data-nav-target="vehicleCard"><span>▣</span> Vehicle</button>
+          <button class="nav-btn" data-nav-target="worldCard"><span>◌</span> World</button>
+          <button class="nav-btn" data-nav-target="adminCard"><span>♜</span> Admin</button>
+          <button class="nav-btn" data-nav-target="communicationCard"><span>◇</span> Communication</button>
+          <button class="nav-btn" data-nav-target="auditCard"><span>☷</span> Audit Logs</button>
+          <button class="nav-btn" data-nav-target="developerSection"><span>⌘</span> Developer</button>
+        </nav>
+
         <section class="quick-card">
-          <h2>Gyors műveletek</h2>
-          <button class="btn-primary" data-action="duty">Duty ON/OFF (/dutyay)</button>
+          <div class="nav-label">QUICK ACTIONS</div>
+          <button class="btn-primary" data-action="duty">Duty ON/OFF</button>
           <div class="quick-actions">
             <button data-action="heal">Heal + Armor <span class="rank" data-rank-action="heal"></span></button>
-            <button data-action="setArmor">Set Armor 100 <span class="rank" data-rank-action="setArmor"></span></button>
             <button data-action="revive">Revive Self <span class="rank" data-rank-action="revive"></span></button>
             <button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button>
             <button data-action="tpWaypoint">TP Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button>
           </div>
           <div class="hint" id="dutyInfo">Admin Controller tud rangot állítani: <code>/setadminay [id] [rank]</code></div>
         </section>
-
-        <nav class="category-nav">
-          <button class="nav-btn" data-nav-target="playerManagementCard">Players</button>
-          <button class="nav-btn" data-nav-target="playerCard">Self</button>
-          <button class="nav-btn" data-nav-target="teleportCard">Teleport</button>
-          <button class="nav-btn" data-nav-target="vehicleCard">Vehicle</button>
-          <button class="nav-btn" data-nav-target="worldCard">World</button>
-          <button class="nav-btn" data-nav-target="adminCard">Admin</button>
-          <button class="nav-btn" data-nav-target="communicationCard">Comm</button>
-          <button class="nav-btn" data-nav-target="developerSection">Dev</button>
-        </nav>
       </aside>
 
       <section class="content" id="contentScroller">
-                <section class="card player-management" id="playerManagementCard">
-          <div class="section-head"><div><h2>Live Players</h2><div class="subtext"><span id="playerCount">0</span> játékos online</div></div><button id="refreshPlayers" class="compact-btn">↻ Frissítés</button></div>
+        <section class="dashboard" id="dashboardCard">
+          <div class="dashboard-head">
+            <div><div class="eyebrow">OVERVIEW</div><h2>Welcome back, <span id="dashboardAdmin">Admin</span></h2><p>Server administration at a glance.</p></div>
+            <div class="duty-pill" id="dashboardDuty">● DUTY OFF</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><span>ONLINE PLAYERS</span><strong id="dashboardPlayers">0</strong><small>Live server count</small></div>
+            <div class="stat-card"><span>YOUR RANK</span><strong id="dashboardRank">N/A</strong><small id="dashboardRankLevel">Rank 0</small></div>
+            <div class="stat-card"><span>STAFF ONLINE</span><strong id="dashboardStaff">0</strong><small>Admins currently online</small></div>
+            <div class="stat-card"><span>AUDIT EVENTS</span><strong id="dashboardAudit">0</strong><small>Recent actions stored</small></div>
+          </div>
+          <div class="dashboard-actions">
+            <button data-nav-target="playerManagementCard">Manage Players <span>→</span></button>
+            <button data-nav-target="auditCard">View Audit Logs <span>→</span></button>
+            <button data-nav-target="vehicleCard">Vehicle Tools <span>→</span></button>
+          </div>
+        </section>
+
+        <section class="card player-management" id="playerManagementCard">
+          <div class="section-head"><div><div class="eyebrow">LIVE SERVER</div><h2>Players</h2><div class="subtext"><span id="playerCount">0</span> játékos online</div></div><button id="refreshPlayers" class="compact-btn">↻ Frissítés</button></div>
           <div class="player-toolbar"><input id="playerSearch" placeholder="Keresés név vagy ID alapján..." /><select id="playerFilter"><option value="all">Minden játékos</option><option value="staff">Staff</option></select></div>
           <div id="playerList" class="player-list"><div class="empty-state">Játékoslista betöltése...</div></div>
           <div class="hint">A játékosműveletek szerveroldali rang- és duty-ellenőrzésen mennek keresztül.</div>
         </section>
-<section class="card" id="playerCard">
-          <h2>Player</h2>
-          <div class="grid">
-            <label><input type="checkbox" id="godmode" /> Godmode <span class="rank" data-rank-action="godmode"></span></label>
-            <label><input type="checkbox" id="invisible" /> Invisible <span class="rank" data-rank-action="invisible"></span></label>
-            <label><input type="checkbox" id="noclip" /> Noclip <span class="rank" data-rank-action="noclip"></span></label>
-            <label><input type="checkbox" id="freezePosition" /> Pozíció fagyasztása <span class="rank" data-rank-action="freezePosition"></span></label>
-            <label><input type="checkbox" id="coords" /> Koordináta HUD <span class="rank" data-rank-action="coords"></span></label>
-            <label><input type="checkbox" id="superJump" /> Super Jump <span class="rank" data-rank-action="superJump"></span></label>
-            <label><input type="checkbox" id="fastRun" /> Fast Run <span class="rank" data-rank-action="fastRun"></span></label>
-            <button data-action="cleanPed">Clean Ped <span class="rank" data-rank-action="cleanPed"></span></button>
-            <button data-action="killSelf" class="danger">Kill Self <span class="rank" data-rank-action="killSelf"></span></button>
-            <div class="row">
-              <input id="noclipSpeed" type="number" min="0.5" max="15" step="0.1" value="1.5" />
-              <button data-action="setNoclipSpeed">Noclip Speed <span class="rank" data-rank-action="setNoclipSpeed"></span></button>
-            </div>
-            <div class="row"><input id="weaponName" placeholder="WEAPON_CARBINERIFLE" /><button data-action="giveWeapon">Give Weapon <span class="rank" data-rank-action="giveWeapon"></span></button></div>
-          </div>
-        </section>
 
-        <section class="card" id="teleportCard">
-          <h2>Teleport</h2>
-          <div class="grid">
-            <button data-action="tpWaypoint">Teleport Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button>
-            <div class="row"><select id="tpPreset"></select><button data-action="tpPreset">Preset TP <span class="rank" data-rank-action="tpPreset"></span></button></div>
-            <div class="row triple"><input id="tpX" placeholder="X" type="number" step="0.01" /><input id="tpY" placeholder="Y" type="number" step="0.01" /><input id="tpZ" placeholder="Z" type="number" step="0.01" /></div>
-            <button data-action="tpCoords">Teleport XYZ <span class="rank" data-rank-action="tpCoords"></span></button>
-          </div>
-        </section>
+        <section class="card" id="playerCard"><div class="eyebrow">PERSONAL</div><h2>Self Controls</h2><div class="grid">
+          <label><input type="checkbox" id="godmode" /> Godmode <span class="rank" data-rank-action="godmode"></span></label><label><input type="checkbox" id="invisible" /> Invisible <span class="rank" data-rank-action="invisible"></span></label><label><input type="checkbox" id="noclip" /> Noclip <span class="rank" data-rank-action="noclip"></span></label><label><input type="checkbox" id="freezePosition" /> Pozíció fagyasztása <span class="rank" data-rank-action="freezePosition"></span></label><label><input type="checkbox" id="coords" /> Koordináta HUD <span class="rank" data-rank-action="coords"></span></label><label><input type="checkbox" id="superJump" /> Super Jump <span class="rank" data-rank-action="superJump"></span></label><label><input type="checkbox" id="fastRun" /> Fast Run <span class="rank" data-rank-action="fastRun"></span></label><button data-action="cleanPed">Clean Ped <span class="rank" data-rank-action="cleanPed"></span></button><button data-action="killSelf" class="danger">Kill Self <span class="rank" data-rank-action="killSelf"></span></button><div class="row"><input id="noclipSpeed" type="number" min="0.5" max="15" step="0.1" value="1.5" /><button data-action="setNoclipSpeed">Noclip Speed <span class="rank" data-rank-action="setNoclipSpeed"></span></button></div><div class="row"><input id="weaponName" placeholder="WEAPON_CARBINERIFLE" /><button data-action="giveWeapon">Give Weapon <span class="rank" data-rank-action="giveWeapon"></span></button></div>
+        </div></section>
 
-        <section class="card" id="vehicleCard">
-          <h2>Vehicle</h2>
-          <div class="grid">
-            <input id="vehicleModel" placeholder="jármű model (pl: sultanrs)" />
-            <button data-action="spawnVehicle">Spawn Vehicle <span class="rank" data-rank-action="spawnVehicle"></span></button>
-            <button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button>
-            <button data-action="fullFuel">Full Fuel <span class="rank" data-rank-action="fullFuel"></span></button>
-            <button data-action="flipVehicle">Flip Vehicle <span class="rank" data-rank-action="flipVehicle"></span></button>
-            <button data-action="maxVehicle">Max Upgrade <span class="rank" data-rank-action="maxVehicle"></span></button>
-            <label><input type="checkbox" id="forceEngine" /> Force Engine ON <span class="rank" data-rank-action="forceEngine"></span></label>
-            <button data-action="deleteVehicle" class="danger">Delete Vehicle <span class="rank" data-rank-action="deleteVehicle"></span></button>
-          </div>
-        </section>
+        <section class="card" id="teleportCard"><div class="eyebrow">MOVEMENT</div><h2>Teleport</h2><div class="grid"><button data-action="tpWaypoint">Teleport Waypoint <span class="rank" data-rank-action="tpWaypoint"></span></button><div class="row"><select id="tpPreset"></select><button data-action="tpPreset">Preset TP <span class="rank" data-rank-action="tpPreset"></span></button></div><div class="row triple"><input id="tpX" placeholder="X" type="number" step="0.01" /><input id="tpY" placeholder="Y" type="number" step="0.01" /><input id="tpZ" placeholder="Z" type="number" step="0.01" /></div><button data-action="tpCoords">Teleport XYZ <span class="rank" data-rank-action="tpCoords"></span></button></div></section>
 
-        <section class="card" id="worldCard">
-          <h2>World</h2>
-          <div class="grid">
-            <select id="weather"></select>
-            <button data-action="setWeather">Set Weather <span class="rank" data-rank-action="setWeather"></span></button>
-            <div class="row"><input type="number" id="hour" min="0" max="23" value="12" /><input type="number" id="minute" min="0" max="59" value="0" /></div>
-            <button data-action="setTime">Set Time <span class="rank" data-rank-action="setTime"></span></button>
-            <label><input type="checkbox" id="freezeTime" /> Freeze Time <span class="rank" data-rank-action="freezeTime"></span></label>
-            <label><input type="checkbox" id="blackout" /> Blackout <span class="rank" data-rank-action="blackout"></span></label>
-            <div class="row"><input id="clearRadius" type="number" min="5" max="500" value="50" /><button data-action="clearArea">Clear Area <span class="rank" data-rank-action="clearArea"></span></button></div>
-          </div>
-        </section>
+        <section class="card" id="vehicleCard"><div class="eyebrow">GARAGE</div><h2>Vehicle Tools</h2><div class="grid"><input id="vehicleModel" placeholder="jármű model (pl: sultanrs)" /><button data-action="spawnVehicle">Spawn Vehicle <span class="rank" data-rank-action="spawnVehicle"></span></button><button data-action="fixVehicle">Fix Vehicle <span class="rank" data-rank-action="fixVehicle"></span></button><button data-action="fullFuel">Full Fuel <span class="rank" data-rank-action="fullFuel"></span></button><button data-action="flipVehicle">Flip Vehicle <span class="rank" data-rank-action="flipVehicle"></span></button><button data-action="maxVehicle">Max Upgrade <span class="rank" data-rank-action="maxVehicle"></span></button><label><input type="checkbox" id="forceEngine" /> Force Engine ON <span class="rank" data-rank-action="forceEngine"></span></label><button data-action="deleteVehicle" class="danger">Delete Vehicle <span class="rank" data-rank-action="deleteVehicle"></span></button></div></section>
 
-        <section class="card" id="adminCard">
-          <h2>Admin / Players</h2>
-          <div class="grid">
-            <div class="row"><input id="targetId" type="number" placeholder="Target ID" /><button data-action="tpToPlayer">TP To Player <span class="rank" data-rank-action="tpToPlayer"></span></button></div>
-            <div class="row"><input id="bringTargetId" type="number" placeholder="Target ID" /><button data-action="bringPlayer">Bring Player <span class="rank" data-rank-action="bringPlayer"></span></button></div>
-            <div class="row"><input id="kickTargetId" type="number" placeholder="Kick ID" /><input id="kickReason" placeholder="reason" /></div>
-            <button data-action="kickPlayer" class="danger">Kick Player <span class="rank" data-rank-action="kickPlayer"></span></button>
-          </div>
-        </section>
+        <section class="card" id="worldCard"><div class="eyebrow">ENVIRONMENT</div><h2>World Controls</h2><div class="grid"><select id="weather"></select><button data-action="setWeather">Set Weather <span class="rank" data-rank-action="setWeather"></span></button><div class="row"><input type="number" id="hour" min="0" max="23" value="12" /><input type="number" id="minute" min="0" max="59" value="0" /></div><button data-action="setTime">Set Time <span class="rank" data-rank-action="setTime"></span></button><label><input type="checkbox" id="freezeTime" /> Freeze Time <span class="rank" data-rank-action="freezeTime"></span></label><label><input type="checkbox" id="blackout" /> Blackout <span class="rank" data-rank-action="blackout"></span></label><div class="row"><input id="clearRadius" type="number" min="5" max="500" value="50" /><button data-action="clearArea">Clear Area <span class="rank" data-rank-action="clearArea"></span></button></div></div></section>
 
-        <section class="card" id="communicationCard">
-          <h2>Communication</h2>
-          <div class="grid">
-            <input id="announce" placeholder="globál üzenet" />
-            <button data-action="announce">Send Announcement <span class="rank" data-rank-action="announce"></span></button>
-          </div>
-        </section>
+        <section class="card" id="adminCard"><div class="eyebrow">MODERATION</div><h2>Admin / Players</h2><div class="grid"><div class="row"><input id="targetId" type="number" placeholder="Target ID" /><button data-action="tpToPlayer">TP To Player <span class="rank" data-rank-action="tpToPlayer"></span></button></div><div class="row"><input id="bringTargetId" type="number" placeholder="Target ID" /><button data-action="bringPlayer">Bring Player <span class="rank" data-rank-action="bringPlayer"></span></button></div><div class="row"><input id="kickTargetId" type="number" placeholder="Kick ID" /><input id="kickReason" placeholder="reason" /></div><button data-action="kickPlayer" class="danger">Kick Player <span class="rank" data-rank-action="kickPlayer"></span></button></div></section>
 
-        <section id="developerSection" class="card hidden dev-card">
-          <h2 id="developerTitle">Developer szekció</h2>
-          <div class="hint" id="developerHint">Ezt csak a Developer rang látja.</div>
-          <div class="grid">
-            <button data-action="printCoords">Print Coords <span class="rank" data-rank-action="printCoords"></span></button>
-            <div class="row"><input id="pedModel" placeholder="ped model (pl: a_m_m_business_01)" /><button data-action="setPedModel">Set Ped Model <span class="rank" data-rank-action="setPedModel"></span></button></div>
-            <div class="row"><input id="objectModel" placeholder="object prop (pl: prop_beachball_02)" /><button data-action="spawnObject">Spawn Object <span class="rank" data-rank-action="spawnObject"></span></button></div>
-            <button data-action="deleteAimedEntity" class="danger">Delete Aimed Entity <span class="rank" data-rank-action="deleteAimedEntity"></span></button>
-            <label><input type="checkbox" id="noRagdoll" /> No Ragdoll <span class="rank" data-rank-action="noRagdoll"></span></label>
-            <label><input type="checkbox" id="devEntityDebug" /> Entity Debug Overlay <span class="rank" data-rank-action="devEntityDebug"></span></label>
-          </div>
-        </section>
+        <section class="card" id="communicationCard"><div class="eyebrow">SERVER</div><h2>Communication</h2><div class="grid"><input id="announce" placeholder="globál üzenet" /><button data-action="announce">Send Announcement <span class="rank" data-rank-action="announce"></span></button></div></section>
+
+        <section class="card" id="auditCard"><div class="section-head"><div><div class="eyebrow">SECURITY</div><h2>Audit Logs</h2><div class="subtext">Legutóbbi admin műveletek</div></div><button id="refreshAudit" class="compact-btn">↻ Frissítés</button></div><div class="player-toolbar"><input id="auditSearch" placeholder="Keresés admin, action vagy target alapján..." /><select id="auditFilter"><option value="all">Minden művelet</option><option value="player">Player</option><option value="server">Server</option><option value="rank">Rank</option><option value="duty">Duty</option></select></div><div id="auditList" class="player-list"><div class="empty-state">Audit log betöltése...</div></div></section>
+
+        <section id="developerSection" class="card hidden dev-card"><div class="eyebrow">DEVELOPER</div><h2 id="developerTitle">Developer szekció</h2><div class="hint" id="developerHint">Ezt csak a Developer rang látja.</div><div class="grid"><button data-action="printCoords">Print Coords <span class="rank" data-rank-action="printCoords"></span></button><div class="row"><input id="pedModel" placeholder="ped model (pl: a_m_m_business_01)" /><button data-action="setPedModel">Set Ped Model <span class="rank" data-rank-action="setPedModel"></span></button></div><div class="row"><input id="objectModel" placeholder="object prop (pl: prop_beachball_02)" /><button data-action="spawnObject">Spawn Object <span class="rank" data-rank-action="spawnObject"></span></button></div><button data-action="deleteAimedEntity" class="danger">Delete Aimed Entity <span class="rank" data-rank-action="deleteAimedEntity"></span></button><label><input type="checkbox" id="noRagdoll" /> No Ragdoll <span class="rank" data-rank-action="noRagdoll"></span></label><label><input type="checkbox" id="devEntityDebug" /> Entity Debug Overlay <span class="rank" data-rank-action="devEntityDebug"></span></label></div></section>
       </section>
     </div>
   </main>
-
   <script src="app.js"></script>
 </body>
 </html>
