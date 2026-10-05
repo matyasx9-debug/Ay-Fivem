@@ -2,7 +2,7 @@
 
 A standalone, modern NUI admin and developer panel for FiveM servers.
 
-**Current release: 2.2.0**
+**Current release: 2.3.0**
 
 ## Features
 
@@ -16,7 +16,7 @@ A standalone, modern NUI admin and developer panel for FiveM servers.
 - Developer tools: Ped/Object spawning, Entity Debug, Delete Aimed Entity and No Ragdoll
 - `/copycoords` with Vec3 and Vec4 output
 - Hungarian and English UI support
-- Optional Discord webhook audit logging
+- Advanced Discord audit logging with embeds, event categories, queue/retry handling, player join/leave and server lifecycle events
 - Server-side permission and input validation
 - GitHub Actions CI
 
@@ -141,9 +141,27 @@ Enable it only if required:
 ```lua
 Config.EnableWebhookLogs = true
 Config.WebhookUrl = 'YOUR_WEBHOOK_URL'
+
+-- New Discord integration
+Config.Discord = {
+    enabled = true,
+    webhook = 'YOUR_WEBHOOK_URL',
+    username = 'AY Panel',
+    logPlayerJoinLeave = true,
+    logAdminActions = true,
+    logDutyChanges = true,
+    logRankChanges = true,
+    logServerLifecycle = true,
+    includeIdentifiers = false,
+    includeCoordinates = false,
+    retryCount = 2,
+    maxQueueSize = 50
+}
 ```
 
 Never commit a real Discord webhook URL to a public repository.
+
+Discord logs now include structured embeds for admin/player actions, duty changes, rank changes, player joins/leaves and resource lifecycle events. Webhook requests are queued and retried to reduce log loss during short Discord/network interruptions. Identifier logging is opt-in.
 
 ## Copy coordinates
 
