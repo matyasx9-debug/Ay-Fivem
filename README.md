@@ -2,7 +2,7 @@
 
 A standalone, modern NUI admin and developer panel for FiveM servers.
 
-**Current release: 2.3.0**
+**Current release: `2.4.0`**
 
 ## Features
 
