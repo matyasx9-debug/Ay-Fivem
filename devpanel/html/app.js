@@ -7,6 +7,40 @@ const developerSection = document.getElementById('developerSection');
 const panelTitle = document.getElementById('panelTitle');
 const panelLogo = document.getElementById('panelLogo');
 
+let players = [];
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+}
+
+function renderPlayers() {
+  const list = document.getElementById('playerList');
+  const count = document.getElementById('playerCount');
+  const search = (document.getElementById('playerSearch')?.value || '').trim().toLowerCase();
+  const filter = document.getElementById('playerFilter')?.value || 'all';
+  const filtered = players.filter((player) => {
+    const matchesSearch = !search || String(player.id).includes(search) || String(player.name).toLowerCase().includes(search);
+    return matchesSearch && (filter === 'all' || player.rank > 0);
+  });
+  if (count) count.textContent = String(players.length);
+  if (!list) return;
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state">Nincs találat.</div>'; return; }
+  list.innerHTML = filtered.map((player) => {
+    const staff = player.rank > 0;
+    const staffLabel = staff ? '<span class="player-badge staff">' + escapeHtml(player.rankName) + (player.duty ? ' • DUTY' : '') + '</span>' : '';
+    return '<article class="player-row"><div class="player-main"><div class="player-avatar">' + escapeHtml(String(player.name).slice(0, 1).toUpperCase()) + '</div><div class="player-meta"><strong>' + escapeHtml(player.name) + '</strong><span>ID ' + player.id + ' • ' + player.ping + ' ms ' + staffLabel + '</span></div></div><div class="player-actions">' +
+      '<button data-player-action="playerSpectate" data-player-id="' + player.id + '">Spectate</button>' +
+      '<button data-player-action="playerGoto" data-player-id="' + player.id + '">Go To</button>' +
+      '<button data-player-action="playerBring" data-player-id="' + player.id + '">Bring</button>' +
+      '<button data-player-action="playerFreeze" data-player-id="' + player.id + '">Freeze</button>' +
+      '<button data-player-action="playerHeal" data-player-id="' + player.id + '">Heal</button>' +
+      '<button data-player-action="playerRevive" data-player-id="' + player.id + '">Revive</button>' +
+      '<button data-player-action="playerKill" data-player-id="' + player.id + '" class="danger">Kill</button>' +
+      '<button data-player-action="playerKick" data-player-id="' + player.id + '" class="danger">Kick</button>' +
+      '</div></article>';
+  }).join('');
+}
+
 let adminState = {
   rank: 0,
   rankName: 'N/A',
@@ -74,6 +108,19 @@ function renderAdminInfo() {
   updateRankBadges();
 }
 
+document.getElementById('refreshPlayers')?.addEventListener('click', () => post('refreshPlayers'));
+document.getElementById('playerSearch')?.addEventListener('input', renderPlayers);
+document.getElementById('playerFilter')?.addEventListener('change', renderPlayers);
+document.getElementById('playerList')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-player-action]');
+  if (!button) return;
+  const subAction = button.dataset.playerAction;
+  const targetId = Number(button.dataset.playerId || 0);
+  let reason = '';
+  if (subAction === 'playerKick') { reason = window.prompt('Kick indok:', 'Kicked by AY Panel') || ''; if (!reason) return; }
+  post('action', { action: 'playerAction', subAction, targetId, reason });
+});
+
 window.addEventListener('message', (event) => {
   const data = event.data;
   if (data.action === 'toggle') {
@@ -101,6 +148,8 @@ window.addEventListener('message', (event) => {
       renderAdminInfo();
     }
   }
+
+  if (data.action === 'players') { players = Array.isArray(data.players) ? data.players : []; renderPlayers(); }
 
   if (data.action === 'adminState' && data.admin) {
     adminState = { ...adminState, ...data.admin };
