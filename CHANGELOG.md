@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0 — 2026-10-05
+
+### Added
+- In-panel server-side Audit Log with the latest 100 admin actions.
+- Audit entries include timestamp, actor, actor ID, action, target and details.
+- Audit log search and category filters.
+- Server-side permission checks before audit history is returned.
+- Automatic audit records for player actions, server actions, duty changes and admin rank changes.
+- Manual Audit Log refresh button.
+
 ## 2.3.0 — 2026-10-05
 
 ### Discord Integration
