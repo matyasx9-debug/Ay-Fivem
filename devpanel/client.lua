@@ -19,6 +19,8 @@ local noClipSpeed = 1.5
 
 local savedAppearance = nil
 local actionBusy = false
+local spectating = false
+local spectateTarget = 0
 
 local function notify(msg)
     BeginTextCommandThefeedPost('STRING')
@@ -163,9 +165,61 @@ RegisterNetEvent('ay_devpanel:togglePanel', function()
     Wait(100)
     if not hasAccess then notify('~r~Nincs jogosultságod a panelhez.'); return end
     setPanel(not panelOpen)
+    if panelOpen then TriggerServerEvent('ay_devpanel:requestPlayers') end
 end)
 
 RegisterNetEvent('ay_devpanel:setPermission', function(state) hasAccess = state end)
+
+RegisterNetEvent('ay_devpanel:playerList', function(players)
+    SendNUIMessage({ action = 'players', players = players or {} })
+end)
+
+RegisterNetEvent('ay_devpanel:setPlayerFrozen', function(state)
+    FreezeEntityPosition(PlayerPedId(), state == true)
+end)
+
+RegisterNetEvent('ay_devpanel:playerHeal', function()
+    local ped = PlayerPedId()
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    SetPedArmour(ped, 100)
+end)
+
+RegisterNetEvent('ay_devpanel:playerRevive', function()
+    local ped = PlayerPedId()
+    local c = GetEntityCoords(ped)
+    NetworkResurrectLocalPlayer(c.x, c.y, c.z, GetEntityHeading(ped), true, false)
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    ClearPedBloodDamage(ped)
+end)
+
+RegisterNetEvent('ay_devpanel:playerKill', function()
+    SetEntityHealth(PlayerPedId(), 0)
+end)
+
+local function stopSpectating()
+    if not spectating then return end
+    NetworkSetInSpectatorMode(false, PlayerPedId())
+    SetEntityVisible(PlayerPedId(), true, false)
+    FreezeEntityPosition(PlayerPedId(), false)
+    spectating = false
+    spectateTarget = 0
+    notify('~g~Spectate kikapcsolva')
+end
+
+RegisterNetEvent('ay_devpanel:startSpectate', function(serverId)
+    local targetPlayer = GetPlayerFromServerId(tonumber(serverId) or -1)
+    if targetPlayer == -1 then notify('~r~A játékos nem elérhető a klienseden.'); return end
+    local targetPed = GetPlayerPed(targetPlayer)
+    if targetPed == 0 or not DoesEntityExist(targetPed) then notify('~r~A játékos pedje nem érhető el.'); return end
+    spectating = true
+    spectateTarget = tonumber(serverId)
+    SetEntityVisible(PlayerPedId(), false, false)
+    FreezeEntityPosition(PlayerPedId(), true)
+    NetworkSetInSpectatorMode(true, targetPed)
+    notify(('~b~Spectate: ID %s | ESC a kilépéshez'):format(serverId))
+end)
+
+RegisterCommand('ayspectateoff', function() stopSpectating() end, false)
 
 RegisterNetEvent('ay_devpanel:adminState', function(state)
     adminRank = tonumber(state.rank) or 0
@@ -186,7 +240,12 @@ RegisterNetEvent('ay_devpanel:setDutyClient', function(state, rank, outfit)
     sendAdminStateToUi()
 end)
 
-RegisterNUICallback('close', function(_, cb) setPanel(false); cb('ok') end)
+RegisterNUICallback('close', function(_, cb) stopSpectating(); setPanel(false); cb('ok') end)
+
+RegisterNUICallback('refreshPlayers', function(_, cb)
+    if hasAccess then TriggerServerEvent('ay_devpanel:requestPlayers') end
+    cb('ok')
+end)
 
 RegisterNetEvent('ay_devpanel:setWeatherClient', function(weather)
     SetWeatherTypeOverTime(weather, 3.0); Wait(3000); SetWeatherTypeNowPersist(weather)
@@ -208,6 +267,11 @@ RegisterNUICallback('action', function(data, cb)
 
     if type(data) ~= 'table' then cb('ok'); return end
     local action = tostring(data.action or '')
+    if action == 'playerAction' then
+        TriggerServerEvent('ay_devpanel:playerAction', tostring(data.subAction or ''), { targetId = tonumber(data.targetId) or 0, reason = tostring(data.reason or '') })
+        cb('ok')
+        return
+    end
     if action == 'duty' then TriggerServerEvent('ay_devpanel:toggleDuty'); cb('ok'); return end
     if not hasActionPermission(action) then cb('ok'); return end
 
@@ -389,9 +453,17 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    local lastPlayerRefresh = 0
     while true do
         local sleep = 1000
         local ped = PlayerPedId()
+
+        if panelOpen and GetGameTimer() - lastPlayerRefresh > 2500 then
+            lastPlayerRefresh = GetGameTimer()
+            TriggerServerEvent('ay_devpanel:requestPlayers')
+        end
+
+        if spectating and IsControlJustPressed(0, 322) then stopSpectating() end
 
         if noclip then
             sleep = 0
