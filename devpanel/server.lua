@@ -16,7 +16,10 @@ end
 local function getMaxRank()
     local maxRank = 0
     for rank in pairs(Config.Ranks or {}) do
-        maxRank = math.max(maxRank, tonumber(rank) or 0)
+        rank = tonumber(rank)
+        if rank and rank > 0 and Config.Ranks[rank] then
+            maxRank = math.max(maxRank, math.floor(rank))
+        end
     end
     return maxRank
 end
@@ -53,6 +56,15 @@ local function trim(value)
     return value:gsub('^%s+', ''):gsub('%s+$', '')
 end
 
+local function normalizeRank(rank)
+    rank = tonumber(rank)
+    if not rank then return nil end
+    rank = math.floor(rank)
+    if rank < 0 then return nil end
+    if rank > 0 and not Config.Ranks[rank] then return nil end
+    return rank
+end
+
 local function logToDiscord(message)
     if not Config.EnableWebhookLogs or Config.WebhookUrl == '' then return end
 
@@ -69,9 +81,9 @@ end
 
 local function getRankFromIdentifiers(src)
     for _, id in ipairs(GetPlayerIdentifiers(src)) do
-        local rank = Config.AdminRanks[id]
-        if rank then
-            return math.max(0, math.floor(tonumber(rank) or 0))
+        local rank = normalizeRank(Config.AdminRanks[id])
+        if rank and rank > 0 then
+            return rank
         end
     end
 
@@ -296,9 +308,9 @@ RegisterCommand('setadminay', function(src, args)
     end
 
     local target = getPlayerTarget(args[1])
-    local rank = math.floor(tonumber(args[2] or '') or -1)
+    local rank = normalizeRank(args[2])
 
-    if not target or rank < 0 or (rank > 0 and not Config.Ranks[rank]) then
+    if not target or rank == nil then
         if src == 0 then
             print('Usage: setadminay <id> <rank> (rank must exist in Config.Ranks)')
         else
