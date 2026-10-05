@@ -1,0 +1,46 @@
+name: AY Panel CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Lua
+        uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "5.4"
+
+      - name: Validate Lua
+        shell: bash
+        run: |
+          set -euo pipefail
+          find devpanel -type f -name '*.lua' -print0 | xargs -0 -n1 luac -p
+
+      - name: Validate JavaScript
+        run: node --check devpanel/html/app.js
+
+      - name: Validate resource files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f devpanel/fxmanifest.lua
+          test -f devpanel/config.lua
+          test -f devpanel/client.lua
+          test -f devpanel/server.lua
+          test -f devpanel/html/index.html
+          test -f devpanel/html/app.js
+          test -f devpanel/html/style.css
+          grep -q "version '2.1.0'" devpanel/fxmanifest.lua
+          grep -q "ui_page 'html/index.html'" devpanel/fxmanifest.lua
