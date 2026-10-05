@@ -165,13 +165,20 @@ RegisterNetEvent('ay_devpanel:togglePanel', function()
     Wait(100)
     if not hasAccess then notify('~r~Nincs jogosultságod a panelhez.'); return end
     setPanel(not panelOpen)
-    if panelOpen then TriggerServerEvent('ay_devpanel:requestPlayers') end
+    if panelOpen then
+        TriggerServerEvent('ay_devpanel:requestPlayers')
+        TriggerServerEvent('ay_devpanel:requestAuditHistory')
+    end
 end)
 
 RegisterNetEvent('ay_devpanel:setPermission', function(state) hasAccess = state end)
 
 RegisterNetEvent('ay_devpanel:playerList', function(players)
     SendNUIMessage({ action = 'players', players = players or {} })
+end)
+
+RegisterNetEvent('ay_devpanel:auditHistory', function(entries)
+    SendNUIMessage({ action = 'auditHistory', entries = entries or {} })
 end)
 
 RegisterNetEvent('ay_devpanel:setPlayerFrozen', function(state)
@@ -244,6 +251,11 @@ RegisterNUICallback('close', function(_, cb) stopSpectating(); setPanel(false); 
 
 RegisterNUICallback('refreshPlayers', function(_, cb)
     if hasAccess then TriggerServerEvent('ay_devpanel:requestPlayers') end
+    cb('ok')
+end)
+
+RegisterNUICallback('refreshAudit', function(_, cb)
+    if hasAccess then TriggerServerEvent('ay_devpanel:requestAuditHistory') end
     cb('ok')
 end)
 
@@ -461,6 +473,7 @@ CreateThread(function()
         if panelOpen and GetGameTimer() - lastPlayerRefresh > 2500 then
             lastPlayerRefresh = GetGameTimer()
             TriggerServerEvent('ay_devpanel:requestPlayers')
+            TriggerServerEvent('ay_devpanel:requestAuditHistory')
         end
 
         if spectating and IsControlJustPressed(0, 322) then stopSpectating() end
