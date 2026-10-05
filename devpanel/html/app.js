@@ -8,9 +8,35 @@ const panelTitle = document.getElementById('panelTitle');
 const panelLogo = document.getElementById('panelLogo');
 
 let players = [];
+let auditEntries = [];
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+}
+
+
+function renderAudit() {
+  const list = document.getElementById('auditList');
+  const search = (document.getElementById('auditSearch')?.value || '').trim().toLowerCase();
+  const filter = document.getElementById('auditFilter')?.value || 'all';
+  const filtered = auditEntries.slice().reverse().filter((entry) => {
+    const haystack = [entry.actor, entry.action, entry.target, entry.details].join(' ').toLowerCase();
+    const matchesSearch = !search || haystack.includes(search);
+    let matchesFilter = true;
+    if (filter === 'player') matchesFilter = String(entry.action).startsWith('player');
+    if (filter === 'server') matchesFilter = !String(entry.action).startsWith('player') && !['rankChange','dutyOn','dutyOff'].includes(entry.action);
+    if (filter === 'rank') matchesFilter = entry.action === 'rankChange';
+    if (filter === 'duty') matchesFilter = entry.action === 'dutyOn' || entry.action === 'dutyOff';
+    return matchesSearch && matchesFilter;
+  });
+  if (!list) return;
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state">Nincs audit találat.</div>'; return; }
+  list.innerHTML = filtered.map((entry) =>
+    '<article class="player-row audit-row"><div class="player-main"><div class="player-avatar">✓</div><div class="player-meta"><strong>' +
+    escapeHtml(entry.actor) + ' <span class="player-badge staff">' + escapeHtml(entry.action) +
+    '</span></strong><span>' + escapeHtml(entry.time) + ' • Target: ' + escapeHtml(entry.target) +
+    (entry.details ? ' • ' + escapeHtml(entry.details) : '') + '</span></div></div><div class="hint">#' + entry.id + '</div></article>'
+  ).join('');
 }
 
 function renderPlayers() {
@@ -109,6 +135,9 @@ function renderAdminInfo() {
 }
 
 document.getElementById('refreshPlayers')?.addEventListener('click', () => post('refreshPlayers'));
+document.getElementById('refreshAudit')?.addEventListener('click', () => post('refreshAudit'));
+document.getElementById('auditSearch')?.addEventListener('input', renderAudit);
+document.getElementById('auditFilter')?.addEventListener('change', renderAudit);
 document.getElementById('playerSearch')?.addEventListener('input', renderPlayers);
 document.getElementById('playerFilter')?.addEventListener('change', renderPlayers);
 document.getElementById('playerList')?.addEventListener('click', (event) => {
@@ -150,6 +179,7 @@ window.addEventListener('message', (event) => {
   }
 
   if (data.action === 'players') { players = Array.isArray(data.players) ? data.players : []; renderPlayers(); }
+  if (data.action === 'auditHistory') { auditEntries = Array.isArray(data.entries) ? data.entries : []; renderAudit(); }
 
   if (data.action === 'adminState' && data.admin) {
     adminState = { ...adminState, ...data.admin };
