@@ -56,6 +56,15 @@ Config.MinNoclipSpeed = 0.5
 
 Config.ActionRanks = {
     duty = 1,
+    viewPlayers = 1,
+    playerSpectate = 3,
+    playerFreeze = 3,
+    playerHeal = 2,
+    playerRevive = 2,
+    playerKill = 4,
+    playerGoto = 3,
+    playerBring = 3,
+    playerKick = 4,
     godmode = 2,
     heal = 1,
     setArmor = 1,
