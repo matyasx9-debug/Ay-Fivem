@@ -66,18 +66,110 @@ local function normalizeRank(rank)
     return rank
 end
 
-local function logToDiscord(message)
-    if not Config.EnableWebhookLogs or Config.WebhookUrl == '' then return end
+local DiscordQueue = {}
+local DiscordSending = false
 
-    PerformHttpRequest(Config.WebhookUrl, function() end, 'POST', json.encode({
-        username = 'AY Panel',
-        embeds = {{
-            title = 'AY Panel Action',
-            description = message,
-            color = 3447003,
-            footer = { text = os.date('%Y-%m-%d %H:%M:%S') }
-        }}
+local function getDiscordConfig()
+    local d = Config.Discord or {}
+    if d.enabled == true and d.webhook and d.webhook ~= '' then
+        return d
+    end
+    if Config.EnableWebhookLogs and Config.WebhookUrl and Config.WebhookUrl ~= '' then
+        return {
+            enabled = true,
+            webhook = Config.WebhookUrl,
+            username = 'AY Panel',
+            colors = { info = 3447003, success = 5763719, warning = 16776960, danger = 15158332, purple = 10181046 }
+        }
+    end
+    return nil
+end
+
+local function discordEscape(value)
+    value = tostring(value or '')
+    value = value:gsub('@everyone', '@ everyone'):gsub('@here', '@ here')
+    return value:sub(1, 1024)
+end
+
+local function getPlayerIdentifiersSafe(src)
+    if not src or src == 0 then return {} end
+    local result = {}
+    for _, identifier in ipairs(GetPlayerIdentifiers(src)) do
+        result[#result + 1] = identifier
+    end
+    return result
+end
+
+local function sendDiscordQueue()
+    if DiscordSending or #DiscordQueue == 0 then return end
+    local cfg = getDiscordConfig()
+    if not cfg then DiscordQueue = {}; return end
+
+    DiscordSending = true
+    local item = table.remove(DiscordQueue, 1)
+
+    PerformHttpRequest(cfg.webhook, function(statusCode)
+        if (statusCode < 200 or statusCode >= 300) and item.retries < (tonumber(cfg.retryCount) or 2) then
+            item.retries = item.retries + 1
+            table.insert(DiscordQueue, 1, item)
+        end
+        DiscordSending = false
+        SetTimeout(250, sendDiscordQueue)
+    end, 'POST', json.encode({
+        username = cfg.username or 'AY Panel',
+        avatar_url = cfg.avatarUrl or nil,
+        embeds = { item.embed },
+        allowed_mentions = { parse = {} }
     }), { ['Content-Type'] = 'application/json' })
+end
+
+local function discordLog(title, description, color, fields)
+    local cfg = getDiscordConfig()
+    if not cfg then return end
+    local maxQueue = tonumber(cfg.maxQueueSize) or 50
+    if #DiscordQueue >= maxQueue then return end
+
+    table.insert(DiscordQueue, {
+        retries = 0,
+        embed = {
+            title = ('🛡️ %s'):format(discordEscape(title)),
+            description = discordEscape(description),
+            color = color or ((cfg.colors or {}).info or 3447003),
+            fields = fields or {},
+            footer = { text = ('AY Panel • %s'):format(os.date('%Y-%m-%d %H:%M:%S')) },
+            timestamp = os.date('!%Y-%m-%dT%H:%M:%SZ')
+        }
+    })
+    sendDiscordQueue()
+end
+
+local function logToDiscord(message)
+    discordLog('AY Panel Action', message, 3447003)
+end
+
+local function logPlayerEvent(title, src, color, extra)
+    local cfg = getDiscordConfig()
+    if not cfg then return end
+
+    local name = GetPlayerName(src) or ('ID %s'):format(src)
+    local fields = {
+        { name = 'Player', value = ('%s (#%s)'):format(discordEscape(name), src), inline = true }
+    }
+
+    if extra then
+        fields[#fields + 1] = { name = 'Details', value = discordEscape(extra), inline = true }
+    end
+
+    if cfg.includeIdentifiers then
+        local ids = getPlayerIdentifiersSafe(src)
+        fields[#fields + 1] = {
+            name = 'Identifiers',
+            value = discordEscape(table.concat(ids, '\n')):sub(1, 1024),
+            inline = false
+        }
+    end
+
+    discordLog(title, ('%s • %s'):format(discordEscape(name), title), color, fields)
 end
 
 local function getRankFromIdentifiers(src)
@@ -190,7 +282,7 @@ RegisterNetEvent('ay_devpanel:toggleDuty', function()
 
     setDuty(src, not state.duty)
     notify(src, t('dutyStatus', state.duty and t('on') or t('off')))
-    logToDiscord(('**%s** -> duty [%s]'):format(GetPlayerName(src) or ('ID %s'):format(src), tostring(state.duty)))
+    logPlayerEvent(state.duty and 'Admin duty ON' or 'Admin duty OFF', src, state.duty and ((Config.Discord or {}).colors or {}).success or ((Config.Discord or {}).colors or {}).warning, ('Rank: %s'):format(getRankLabel(state.rank)))
 end)
 
 local function sendPlayerList(src)
@@ -259,7 +351,7 @@ RegisterNetEvent('ay_devpanel:playerAction', function(action, payload)
         if #reason > maxLength then reason = reason:sub(1, maxLength) end
         DropPlayer(targetId, reason)
     end
-    logToDiscord(('**%s** -> player [%s] target **%s**'):format(GetPlayerName(src) or ('ID %s'):format(src), action, GetPlayerName(targetId) or ('ID %s'):format(targetId)))
+    discordLog('Player action', ('%s used %s on %s'):format(GetPlayerName(src) or ('ID %s'):format(src), action, GetPlayerName(targetId) or ('ID %s'):format(targetId)), ((Config.Discord or {}).colors or {}).danger, {{ name = 'Admin', value = ('%s (#%s)'):format(GetPlayerName(src) or 'Unknown', src), inline = true }, { name = 'Target', value = ('%s (#%s)'):format(GetPlayerName(targetId) or 'Unknown', targetId), inline = true }, { name = 'Action', value = action, inline = true }})
 end)
 
 RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
@@ -335,10 +427,7 @@ RegisterNetEvent('ay_devpanel:serverAction', function(action, payload)
         return
     end
 
-    logToDiscord(('**%s** -> [%s]'):format(
-        GetPlayerName(src) or ('ID %s'):format(src),
-        action
-    ))
+    discordLog('Server action', ('%s used %s'):format(GetPlayerName(src) or ('ID %s'):format(src), action), ((Config.Discord or {}).colors or {}).info, {{ name = 'Admin', value = ('%s (#%s)'):format(GetPlayerName(src) or 'Unknown', src), inline = true }, { name = 'Action', value = action, inline = true }})
 end)
 
 RegisterCommand(Config.OpenCommand, function(src)
@@ -404,12 +493,38 @@ RegisterCommand('setadminay', function(src, args)
         notify(src, t('setRankDone', GetPlayerName(target) or ('ID %s'):format(target), getRankLabel(rank)))
     end
 
-    logToDiscord(('**%s** -> set rank of **%s** to [%s]'):format(
-        GetPlayerName(src) or 'CONSOLE',
-        GetPlayerName(target) or ('ID %s'):format(target),
-        rank
-    ))
+    discordLog('Admin rank changed', ('%s changed %s to rank %s'):format(GetPlayerName(src) or 'CONSOLE', GetPlayerName(target) or ('ID %s'):format(target), rank), ((Config.Discord or {}).colors or {}).purple, {{ name = 'Actor', value = ('%s (#%s)'):format(GetPlayerName(src) or 'CONSOLE', src), inline = true }, { name = 'Target', value = ('%s (#%s)'):format(GetPlayerName(target) or 'Unknown', target), inline = true }, { name = 'New rank', value = ('%s — %s'):format(rank, getRankLabel(rank)), inline = true }})
 end, false)
+
+AddEventHandler('playerJoining', function()
+    local src = source
+    if (Config.Discord or {}).logPlayerJoinLeave then
+        logPlayerEvent('Player joining', src, ((Config.Discord or {}).colors or {}).success, 'Connection started')
+    end
+end)
+
+AddEventHandler('playerDropped', function(reason)
+    local src = source
+    if (Config.Discord or {}).logPlayerJoinLeave then
+        logPlayerEvent('Player left', src, ((Config.Discord or {}).colors or {}).warning, ('Reason: %s'):format(reason or 'Unknown'))
+    end
+    AdminController.players[src] = nil
+    FrozenPlayers[src] = nil
+end)
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    if (Config.Discord or {}).logServerLifecycle then
+        discordLog('AY Panel started', 'The AY Developer Panel resource is now online.', ((Config.Discord or {}).colors or {}).success)
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    if (Config.Discord or {}).logServerLifecycle then
+        discordLog('AY Panel stopped', 'The AY Developer Panel resource is shutting down.', ((Config.Discord or {}).colors or {}).danger)
+    end
+end)
 
 AddEventHandler('playerDropped', function()
     AdminController.players[source] = nil
