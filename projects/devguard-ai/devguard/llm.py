@@ -1,6 +1,21 @@
 import json
 import os
+import re
 import urllib.request
+
+_SECRET_PATTERNS = [
+    (re.compile(r"(?i)\b(api[_-]?key|token|secret|password|passwd)\s*[:=]\s*([^\s,;]+)"), r"\1=[REDACTED]"),
+    (re.compile(r"(?i)\b(authorization\s*:\s*bearer)\s+[A-Za-z0-9._~+\-/]+=*"), r"\1 [REDACTED]"),
+    (re.compile(r"\b(sk-[A-Za-z0-9_-]{16,})\b"), "[REDACTED_OPENAI_KEY]"),
+]
+
+
+def redact_sensitive_text(text: str) -> str:
+    """Redact common credentials before log content leaves the local machine."""
+    redacted = text
+    for pattern, replacement in _SECRET_PATTERNS:
+        redacted = pattern.sub(replacement, redacted)
+    return redacted
 
 
 def summarize(findings, log_text: str) -> str:
@@ -16,12 +31,14 @@ def summarize(findings, log_text: str) -> str:
         for item in findings
     )
 
+    safe_log_text = redact_sensitive_text(log_text)
+
     prompt = (
         "You are an IT incident triage assistant. Based only on these findings "
         "and log excerpt, return: likely cause, evidence, immediate checks, and "
         "safe next steps. Do not invent facts.\n\n"
         f"Findings:\n{finding_text}\n\n"
-        f"Log excerpt:\n{log_text[-12000:]}"
+        f"Log excerpt:\n{safe_log_text[-12000:]}"
     )
 
     payload = json.dumps({
