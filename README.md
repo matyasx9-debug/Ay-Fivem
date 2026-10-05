@@ -200,3 +200,11 @@ See the repository license file.
 - Ping and staff/duty indicators
 - Spectate, Go To, Bring, Freeze, Heal, Revive, Kill and Kick
 - Server-side rank and duty validation for player actions
+
+## In-game Preview / Review
+
+Current **AY Panel v2.4.0** visual preview in a FiveM-style in-game environment:
+
+![AY Panel v2.4.0 In-game Preview](docs/ay-panel-preview.svg)
+
+> Preview is a visual mockup of the current NUI layout and features; actual player/server data is populated live in FiveM.
