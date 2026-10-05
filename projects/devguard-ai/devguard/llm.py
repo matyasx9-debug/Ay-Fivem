@@ -4,9 +4,9 @@ import re
 import urllib.request
 
 _SECRET_PATTERNS = [
-    (re.compile(r"(?i)\\b(api[_-]?key|token|secret|password|passwd)\\s*[:=]\\s*([^\\s,;]+)"), r"\\1=[REDACTED]"),
-    (re.compile(r"(?i)\\b(authorization\\s*:\\s*bearer)\\s+[A-Za-z0-9._~+\\-/]+=*"), r"\\1 [REDACTED]"),
-    (re.compile(r"\\b(sk-[A-Za-z0-9_-]{16,})\\b"), "[REDACTED_OPENAI_KEY]"),
+    (re.compile(r"(?i)\b(api[_-]?key|token|secret|password|passwd)\s*[:=]\s*([^\s,;]+)"), r"\1=[REDACTED]"),
+    (re.compile(r"(?i)\b(authorization\s*:\s*bearer)\s+[A-Za-z0-9._~+\-/]+=*"), r"\1 [REDACTED]"),
+    (re.compile(r"\b(sk-[A-Za-z0-9_-]{16,})\b"), "[REDACTED_OPENAI_KEY]"),
 ]
 
 
